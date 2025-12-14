@@ -1,0 +1,102 @@
+basePath: /api
+definitions:
+  db.Folder:
+    properties:
+      createdAt:
+        type: string
+      deletedAt: {}
+      id:
+        format: int64
+        type: integer
+      path:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  handlers.Health:
+    properties:
+      status:
+        type: string
+      time:
+        type: string
+    type: object
+  handlers.createFolderRequest:
+    properties:
+      path:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Local network API for music management
+  title: Music Server API
+  version: "1.0"
+paths:
+  /folders:
+    get:
+      description: List all non-deleted folders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/db.Folder'
+            type: array
+      summary: List folders
+      tags:
+      - folders
+    post:
+      consumes:
+      - application/json
+      description: Create a folder by path
+      parameters:
+      - description: Folder to create
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createFolderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.Folder'
+      summary: Create folder
+      tags:
+      - folders
+  /folders/{id}:
+    get:
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.Folder'
+      summary: Get folder
+      tags:
+      - folders
+  /health:
+    get:
+      description: Returns ok + current server time
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.Health'
+      summary: Health check
+      tags:
+      - system
+swagger: "2.0"
