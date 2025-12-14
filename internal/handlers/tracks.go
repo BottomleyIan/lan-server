@@ -4,8 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
+	"mime"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
 	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
@@ -123,4 +128,112 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, trackDTOFromDB(row))
+}
+
+// StreamTrack godoc
+// @Summary Stream a track
+// @Tags tracks
+// @Produce application/octet-stream
+// @Param id path int true "Track ID"
+// @Success 200 {file} file
+// @Router /tracks/{id}/play [get]
+func (h *Handlers) StreamTrack(w http.ResponseWriter, r *http.Request) {
+	h.serveTrackFile(w, r, "inline")
+}
+
+// DownloadTrack godoc
+// @Summary Download a track
+// @Tags tracks
+// @Produce application/octet-stream
+// @Param id path int true "Track ID"
+// @Success 200 {file} file
+// @Router /tracks/{id}/download [get]
+func (h *Handlers) DownloadTrack(w http.ResponseWriter, r *http.Request) {
+	h.serveTrackFile(w, r, "attachment")
+}
+
+func (h *Handlers) serveTrackFile(w http.ResponseWriter, r *http.Request, disposition string) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	pathParts, err := h.App.Queries.GetPlayableTrackPathPartsByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "track not found or unavailable", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	basePath, err := expandPath(pathParts.FolderPath)
+	if err != nil {
+		http.Error(w, "invalid folder path", http.StatusInternalServerError)
+		return
+	}
+
+	absPath := filepath.Clean(filepath.Join(basePath, pathParts.RelPath))
+	log.Printf("serve track id=%d path=%s", id, absPath)
+	f, err := os.Open(absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil || info.IsDir() {
+		http.Error(w, "file not found", http.StatusNotFound)
+		return
+	}
+
+	ctype := mime.TypeByExtension(filepath.Ext(info.Name()))
+	if ctype == "" {
+		ctype = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", ctype)
+	if disposition != "" {
+		w.Header().Set("Content-Disposition", disposition+"; filename=\""+info.Name()+"\"")
+	}
+	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
+}
+
+// expandPath mirrors scanner's expansion to handle ~ and relative paths.
+func expandPath(p string) (string, error) {
+	p = strings.TrimSpace(p)
+
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		if p == "~" {
+			p = home
+		} else {
+			p = filepath.Join(home, p[2:])
+		}
+	}
+
+	p = filepath.Clean(p)
+	if !filepath.IsAbs(p) {
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return "", err
+		}
+		p = abs
+	}
+	return p, nil
 }

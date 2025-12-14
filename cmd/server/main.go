@@ -85,6 +85,8 @@ func main() {
 			r.Get("/", h.ListTracks)
 			r.Get("/{id}", h.GetTrack)
 			r.Put("/{id}", h.UpdateTrack)
+			r.Get("/{id}/play", h.StreamTrack)
+			r.Get("/{id}/download", h.DownloadTrack)
 		})
 		r.Route("/artists", func(r chi.Router) {
 			r.Get("/", h.ListArtists)

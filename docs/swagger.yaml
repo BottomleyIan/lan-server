@@ -451,4 +451,40 @@ paths:
       summary: Update track
       tags:
       - tracks
+  /tracks/{id}/download:
+    get:
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Download a track
+      tags:
+      - tracks
+  /tracks/{id}/play:
+    get:
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Stream a track
+      tags:
+      - tracks
 swagger: "2.0"
