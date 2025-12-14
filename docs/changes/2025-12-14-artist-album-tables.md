@@ -11,6 +11,9 @@
 - Added artist/album upsert queries and scanner integration to upsert metadata from tags (artist/album/genre/year) onto tracks after file scans.
 - Added track playback/download endpoints that stream files from disk using folder+rel_path, with Swagger docs regenerated.
 - Updated playback/download Swagger responses to mark binary content so Swagger “Try it” works for streaming files.
+- Added project-level `TODO.md` and linked it from `README.md` for quick task tracking.
+- Updated TODOs: added high-priority cover art handling/thumbnail task; moved embeddings note into low-priority checkbox; removed embeddings note from README.
+- Added low-priority TODO to serve curl-friendly terminal responses when detecting curl User-Agent.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

@@ -4,6 +4,8 @@ A local-network Go server for indexing a music library on disk and exposing it v
 
 This project indexes filesystem content into SQLite for fast browsing/searching, while treating the filesystem as the source of truth.
 
+See `TODO.md` for pending tasks.
+
 ---
 
 ## Current Status
@@ -175,5 +177,3 @@ Next scan milestones:
 
 * Prefer chi for routing once endpoints expand (path params, middleware)
 * Consider FTS5 for text search before embeddings
-* Embeddings are a “future fun extra” and should hang off stable `track_id` if added later
-
