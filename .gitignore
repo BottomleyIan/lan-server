@@ -8,6 +8,11 @@
 *.so
 *.dylib
 
+# SQLite runtime database
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # Test binary, built with `go test -c`
 *.test
 

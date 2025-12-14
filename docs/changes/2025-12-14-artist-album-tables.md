@@ -4,6 +4,7 @@
 - Added `artists` and `albums` tables with soft-delete timestamps, unique constraints, and `updated_at` triggers.
 - Extended `tracks` with `artist_id`, `album_id`, `genre`, and `year` columns plus foreign keys and supporting indexes.
 - Expanded `sqlc` overrides and `dbtypes` with a `NullInt64` alias so new nullable columns generate concrete types instead of `interface{}`.
+- Added `.gitignore` rules for SQLite artifacts and removed the checked-in `data.sqlite` files from version control.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.
