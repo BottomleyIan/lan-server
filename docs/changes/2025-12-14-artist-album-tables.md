@@ -8,6 +8,7 @@
 - Added GET/PUT/DELETE handlers for artists and albums (DTO-based), refreshed track DTO/swagger, and regenerated Swagger docs.
 - Added list endpoints for artists and albums, plus corresponding sqlc queries and Swagger updates.
 - Added `rating` (1–5) to tracks, track DTO/mappers, track GET/PUT endpoints to update rating, and Swagger regeneration.
+- Added artist/album upsert queries and scanner integration to upsert metadata from tags (artist/album/genre/year) onto tracks after file scans.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

@@ -77,3 +77,11 @@ SET rating = ?
 WHERE id = ?
   AND deleted_at IS NULL
 RETURNING *;
+
+-- Update track metadata from tags
+-- name: UpdateTrackMetadata :one
+UPDATE tracks
+SET artist_id = ?, album_id = ?, genre = ?, year = ?
+WHERE id = ?
+  AND deleted_at IS NULL
+RETURNING *;

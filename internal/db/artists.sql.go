@@ -115,3 +115,26 @@ func (q *Queries) UpdateArtist(ctx context.Context, arg UpdateArtistParams) (Art
 	)
 	return i, err
 }
+
+const upsertArtist = `-- name: UpsertArtist :one
+INSERT INTO artists (name)
+VALUES (?)
+ON CONFLICT(name) DO UPDATE SET
+  name = excluded.name,
+  deleted_at = NULL
+RETURNING id, name, deleted_at, created_at, updated_at
+`
+
+// Upsert artist by name (revives soft-deleted)
+func (q *Queries) UpsertArtist(ctx context.Context, name string) (Artist, error) {
+	row := q.db.QueryRowContext(ctx, upsertArtist, name)
+	var i Artist
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

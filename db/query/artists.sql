@@ -5,6 +5,15 @@ FROM artists
 WHERE id = ?
   AND deleted_at IS NULL;
 
+-- Upsert artist by name (revives soft-deleted)
+-- name: UpsertArtist :one
+INSERT INTO artists (name)
+VALUES (?)
+ON CONFLICT(name) DO UPDATE SET
+  name = excluded.name,
+  deleted_at = NULL
+RETURNING *;
+
 -- List artists
 -- name: ListArtists :many
 SELECT *

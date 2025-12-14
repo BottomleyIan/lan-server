@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
+	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 	myfs "bottomley.ian/musicserver/internal/services/fs"
 )
 
@@ -80,7 +81,7 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 		rel = filepath.ToSlash(rel)
 		sizeBytes := info.Size()
 		lastModified := info.ModTime().Unix()
-		log.Printf("name: %s, type: %s, ext: %s", d.Name(), d.Type(), ext)
+
 		utp := db.UpsertTrackParams{
 			FolderID:     folderID,
 			RelPath:      rel,
@@ -89,7 +90,53 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 			SizeBytes:    sizeBytes,
 			LastModified: lastModified,
 		}
-		_, err = s.Q.UpsertTrack(ctx, utp)
+		track, err := s.Q.UpsertTrack(ctx, utp)
+		if err != nil {
+			return err
+		}
+
+		metadata, err := s.ReadMetadata(path)
+		if err != nil {
+			return err
+		}
+		var artistID dbtypes.NullInt64
+		var albumID dbtypes.NullInt64
+		var genre dbtypes.NullString
+		var year dbtypes.NullInt64
+
+		if name := strings.TrimSpace(metadata.Artist); name != "" {
+			artist, err := s.Q.UpsertArtist(ctx, name)
+			if err != nil {
+				return err
+			}
+			artistID = dbtypes.NullInt64{Int64: artist.ID, Valid: true}
+		}
+
+		if title := strings.TrimSpace(metadata.Album); title != "" && artistID.Valid {
+			album, err := s.Q.UpsertAlbum(ctx, db.UpsertAlbumParams{
+				ArtistID: artistID.Int64,
+				Title:    title,
+			})
+			if err != nil {
+				return err
+			}
+			albumID = dbtypes.NullInt64{Int64: album.ID, Valid: true}
+		}
+
+		if g := strings.TrimSpace(metadata.Genre); g != "" {
+			genre = dbtypes.NullString{String: g, Valid: true}
+		}
+		if metadata.Year > 0 {
+			year = dbtypes.NullInt64{Int64: int64(metadata.Year), Valid: true}
+		}
+
+		_, err = s.Q.UpdateTrackMetadata(ctx, db.UpdateTrackMetadataParams{
+			ArtistID: artistID,
+			AlbumID:  albumID,
+			Genre:    genre,
+			Year:     year,
+			ID:       track.ID,
+		})
 
 		return err
 	})

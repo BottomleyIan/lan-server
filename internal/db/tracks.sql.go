@@ -240,6 +240,53 @@ func (q *Queries) MarkMissingTracksForFolder(ctx context.Context, arg MarkMissin
 	return err
 }
 
+const updateTrackMetadata = `-- name: UpdateTrackMetadata :one
+UPDATE tracks
+SET artist_id = ?, album_id = ?, genre = ?, year = ?
+WHERE id = ?
+  AND deleted_at IS NULL
+RETURNING id, folder_id, artist_id, album_id, rel_path, filename, ext, genre, year, rating, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+`
+
+type UpdateTrackMetadataParams struct {
+	ArtistID dbtypes.NullInt64
+	AlbumID  dbtypes.NullInt64
+	Genre    dbtypes.NullString
+	Year     dbtypes.NullInt64
+	ID       int64
+}
+
+// Update track metadata from tags
+func (q *Queries) UpdateTrackMetadata(ctx context.Context, arg UpdateTrackMetadataParams) (Track, error) {
+	row := q.db.QueryRowContext(ctx, updateTrackMetadata,
+		arg.ArtistID,
+		arg.AlbumID,
+		arg.Genre,
+		arg.Year,
+		arg.ID,
+	)
+	var i Track
+	err := row.Scan(
+		&i.ID,
+		&i.FolderID,
+		&i.ArtistID,
+		&i.AlbumID,
+		&i.RelPath,
+		&i.Filename,
+		&i.Ext,
+		&i.Genre,
+		&i.Year,
+		&i.Rating,
+		&i.SizeBytes,
+		&i.LastModified,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateTrackRating = `-- name: UpdateTrackRating :one
 UPDATE tracks
 SET rating = ?

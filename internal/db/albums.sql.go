@@ -120,3 +120,33 @@ func (q *Queries) UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) (Album
 	)
 	return i, err
 }
+
+const upsertAlbum = `-- name: UpsertAlbum :one
+INSERT INTO albums (artist_id, title)
+VALUES (?, ?)
+ON CONFLICT(artist_id, title) DO UPDATE SET
+  artist_id = excluded.artist_id,
+  title = excluded.title,
+  deleted_at = NULL
+RETURNING id, artist_id, title, deleted_at, created_at, updated_at
+`
+
+type UpsertAlbumParams struct {
+	ArtistID int64
+	Title    string
+}
+
+// Upsert album by artist/title (revives soft-deleted)
+func (q *Queries) UpsertAlbum(ctx context.Context, arg UpsertAlbumParams) (Album, error) {
+	row := q.db.QueryRowContext(ctx, upsertAlbum, arg.ArtistID, arg.Title)
+	var i Album
+	err := row.Scan(
+		&i.ID,
+		&i.ArtistID,
+		&i.Title,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
