@@ -10,6 +10,23 @@ import (
 	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
+type Album struct {
+	ID        int64
+	ArtistID  int64
+	Title     string
+	DeletedAt dbtypes.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type Artist struct {
+	ID        int64
+	Name      string
+	DeletedAt dbtypes.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type Folder struct {
 	ID             int64
 	Path           string
@@ -26,9 +43,13 @@ type Folder struct {
 type Track struct {
 	ID           int64
 	FolderID     int64
+	ArtistID     dbtypes.NullInt64
+	AlbumID      dbtypes.NullInt64
 	RelPath      string
 	Filename     string
 	Ext          string
+	Genre        dbtypes.NullString
+	Year         dbtypes.NullInt64
 	SizeBytes    int64
 	LastModified int64
 	LastSeenAt   time.Time

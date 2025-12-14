@@ -38,7 +38,7 @@ func (q *Queries) GetPlayableTrackPathPartsByID(ctx context.Context, id int64) (
 }
 
 const listAllIndexedTracks = `-- name: ListAllIndexedTracks :many
-SELECT t.id, t.folder_id, t.rel_path, t.filename, t.ext, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
@@ -59,9 +59,13 @@ func (q *Queries) ListAllIndexedTracks(ctx context.Context) ([]Track, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.FolderID,
+			&i.ArtistID,
+			&i.AlbumID,
 			&i.RelPath,
 			&i.Filename,
 			&i.Ext,
+			&i.Genre,
+			&i.Year,
 			&i.SizeBytes,
 			&i.LastModified,
 			&i.LastSeenAt,
@@ -83,7 +87,7 @@ func (q *Queries) ListAllIndexedTracks(ctx context.Context) ([]Track, error) {
 }
 
 const listPlayableTracks = `-- name: ListPlayableTracks :many
-SELECT t.id, t.folder_id, t.rel_path, t.filename, t.ext, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
@@ -105,9 +109,13 @@ func (q *Queries) ListPlayableTracks(ctx context.Context) ([]Track, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.FolderID,
+			&i.ArtistID,
+			&i.AlbumID,
 			&i.RelPath,
 			&i.Filename,
 			&i.Ext,
+			&i.Genre,
+			&i.Year,
 			&i.SizeBytes,
 			&i.LastModified,
 			&i.LastSeenAt,
@@ -129,7 +137,7 @@ func (q *Queries) ListPlayableTracks(ctx context.Context) ([]Track, error) {
 }
 
 const listTracksForFolder = `-- name: ListTracksForFolder :many
-SELECT id, folder_id, rel_path, filename, ext, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+SELECT id, folder_id, artist_id, album_id, rel_path, filename, ext, genre, year, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
 FROM tracks
 WHERE folder_id = ? AND deleted_at IS NULL
 ORDER BY rel_path
@@ -148,9 +156,13 @@ func (q *Queries) ListTracksForFolder(ctx context.Context, folderID int64) ([]Tr
 		if err := rows.Scan(
 			&i.ID,
 			&i.FolderID,
+			&i.ArtistID,
+			&i.AlbumID,
 			&i.RelPath,
 			&i.Filename,
 			&i.Ext,
+			&i.Genre,
+			&i.Year,
 			&i.SizeBytes,
 			&i.LastModified,
 			&i.LastSeenAt,
@@ -204,7 +216,7 @@ ON CONFLICT(folder_id, rel_path) DO UPDATE SET
   last_modified = excluded.last_modified,
   last_seen_at  = CURRENT_TIMESTAMP,
   deleted_at    = NULL
-RETURNING id, folder_id, rel_path, filename, ext, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+RETURNING id, folder_id, artist_id, album_id, rel_path, filename, ext, genre, year, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
 `
 
 type UpsertTrackParams struct {
@@ -231,9 +243,13 @@ func (q *Queries) UpsertTrack(ctx context.Context, arg UpsertTrackParams) (Track
 	err := row.Scan(
 		&i.ID,
 		&i.FolderID,
+		&i.ArtistID,
+		&i.AlbumID,
 		&i.RelPath,
 		&i.Filename,
 		&i.Ext,
+		&i.Genre,
+		&i.Year,
 		&i.SizeBytes,
 		&i.LastModified,
 		&i.LastSeenAt,
