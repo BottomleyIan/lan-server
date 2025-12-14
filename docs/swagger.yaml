@@ -1,5 +1,33 @@
 basePath: /api
 definitions:
+  handlers.AlbumDTO:
+    properties:
+      artist_id:
+        type: integer
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  handlers.ArtistDTO:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
   handlers.FolderDTO:
     properties:
       available:
@@ -46,6 +74,10 @@ definitions:
     type: object
   handlers.TrackDTO:
     properties:
+      album_id:
+        type: integer
+      artist_id:
+        type: integer
       created_at:
         type: string
       deleted_at:
@@ -56,6 +88,8 @@ definitions:
         type: string
       folder_id:
         type: integer
+      genre:
+        type: string
       id:
         type: integer
       last_modified:
@@ -68,10 +102,24 @@ definitions:
         type: integer
       updated_at:
         type: string
+      year:
+        type: integer
     type: object
   handlers.createFolderRequest:
     properties:
       path:
+        type: string
+    type: object
+  handlers.updateAlbumRequest:
+    properties:
+      artist_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  handlers.updateArtistRequest:
+    properties:
+      name:
         type: string
     type: object
 host: localhost:8080
@@ -81,6 +129,148 @@ info:
   title: Music Server API
   version: "1.0"
 paths:
+  /albums:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.AlbumDTO'
+            type: array
+      summary: List albums
+      tags:
+      - albums
+  /albums/{id}:
+    delete:
+      description: Soft-delete an album
+      parameters:
+      - description: Album ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Delete album
+      tags:
+      - albums
+    get:
+      parameters:
+      - description: Album ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.AlbumDTO'
+      summary: Get album
+      tags:
+      - albums
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Album ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Album update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateAlbumRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.AlbumDTO'
+      summary: Update album
+      tags:
+      - albums
+  /artists:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.ArtistDTO'
+            type: array
+      summary: List artists
+      tags:
+      - artists
+  /artists/{id}:
+    delete:
+      description: Soft-delete an artist
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Delete artist
+      tags:
+      - artists
+    get:
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ArtistDTO'
+      summary: Get artist
+      tags:
+      - artists
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Artist update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateArtistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ArtistDTO'
+      summary: Update artist
+      tags:
+      - artists
   /folders:
     get:
       description: List all non-deleted folders

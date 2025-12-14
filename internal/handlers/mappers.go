@@ -63,9 +63,13 @@ func trackDTOFromDB(tk db.Track) TrackDTO {
 	return TrackDTO{
 		ID:           tk.ID,
 		FolderID:     tk.FolderID,
+		ArtistID:     int64PtrFromNullInt64(tk.ArtistID),
+		AlbumID:      int64PtrFromNullInt64(tk.AlbumID),
 		RelPath:      tk.RelPath,
 		Filename:     tk.Filename,
 		Ext:          tk.Ext,
+		Genre:        stringPtrFromNullString(tk.Genre),
+		Year:         int64PtrFromNullInt64(tk.Year),
 		SizeBytes:    tk.SizeBytes,
 		LastModified: tk.LastModified,
 		LastSeenAt:   tk.LastSeenAt,
@@ -79,6 +83,43 @@ func tracksDTOFromDB(rows []db.Track) []TrackDTO {
 	out := make([]TrackDTO, 0, len(rows))
 	for _, f := range rows {
 		out = append(out, trackDTOFromDB(f))
+	}
+	return out
+}
+
+func artistDTOFromDB(a db.Artist) ArtistDTO {
+	return ArtistDTO{
+		ID:        a.ID,
+		Name:      a.Name,
+		DeletedAt: timePtrFromNullTime(a.DeletedAt),
+		CreatedAt: a.CreatedAt,
+		UpdatedAt: a.UpdatedAt,
+	}
+}
+
+func artistsDTOFromDB(rows []db.Artist) []ArtistDTO {
+	out := make([]ArtistDTO, 0, len(rows))
+	for _, a := range rows {
+		out = append(out, artistDTOFromDB(a))
+	}
+	return out
+}
+
+func albumDTOFromDB(al db.Album) AlbumDTO {
+	return AlbumDTO{
+		ID:        al.ID,
+		ArtistID:  al.ArtistID,
+		Title:     al.Title,
+		DeletedAt: timePtrFromNullTime(al.DeletedAt),
+		CreatedAt: al.CreatedAt,
+		UpdatedAt: al.UpdatedAt,
+	}
+}
+
+func albumsDTOFromDB(rows []db.Album) []AlbumDTO {
+	out := make([]AlbumDTO, 0, len(rows))
+	for _, al := range rows {
+		out = append(out, albumDTOFromDB(al))
 	}
 	return out
 }

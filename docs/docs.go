@@ -15,6 +15,224 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/albums": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "albums"
+                ],
+                "summary": "List albums",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.AlbumDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/albums/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "albums"
+                ],
+                "summary": "Get album",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Album ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AlbumDTO"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "albums"
+                ],
+                "summary": "Update album",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Album ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Album update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateAlbumRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AlbumDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Soft-delete an album",
+                "tags": [
+                    "albums"
+                ],
+                "summary": "Delete album",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Album ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/artists": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "artists"
+                ],
+                "summary": "List artists",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.ArtistDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/artists/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "artists"
+                ],
+                "summary": "Get artist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Artist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ArtistDTO"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "artists"
+                ],
+                "summary": "Update artist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Artist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Artist update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateArtistRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ArtistDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Soft-delete an artist",
+                "tags": [
+                    "artists"
+                ],
+                "summary": "Delete artist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Artist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/folders": {
             "get": {
                 "description": "List all non-deleted folders",
@@ -214,6 +432,49 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.AlbumDTO": {
+            "type": "object",
+            "properties": {
+                "artist_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ArtistDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.FolderDTO": {
             "type": "object",
             "properties": {
@@ -284,6 +545,12 @@ const docTemplate = `{
         "handlers.TrackDTO": {
             "type": "object",
             "properties": {
+                "album_id": {
+                    "type": "integer"
+                },
+                "artist_id": {
+                    "type": "integer"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -298,6 +565,9 @@ const docTemplate = `{
                 },
                 "folder_id": {
                     "type": "integer"
+                },
+                "genre": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -316,6 +586,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "year": {
+                    "type": "integer"
                 }
             }
         },
@@ -323,6 +596,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.updateAlbumRequest": {
+            "type": "object",
+            "properties": {
+                "artist_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.updateArtistRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
                     "type": "string"
                 }
             }

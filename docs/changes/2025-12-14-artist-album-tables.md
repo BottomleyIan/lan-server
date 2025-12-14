@@ -5,6 +5,8 @@
 - Extended `tracks` with `artist_id`, `album_id`, `genre`, and `year` columns plus foreign keys and supporting indexes.
 - Expanded `sqlc` overrides and `dbtypes` with a `NullInt64` alias so new nullable columns generate concrete types instead of `interface{}`.
 - Added `.gitignore` rules for SQLite artifacts and removed the checked-in `data.sqlite` files from version control.
+- Added GET/PUT/DELETE handlers for artists and albums (DTO-based), refreshed track DTO/swagger, and regenerated Swagger docs.
+- Added list endpoints for artists and albums, plus corresponding sqlc queries and Swagger updates.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

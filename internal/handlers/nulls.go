@@ -20,3 +20,11 @@ func stringPtrFromNullString(ns sql.NullString) *string {
 	s := ns.String
 	return &s
 }
+
+func int64PtrFromNullInt64(ni sql.NullInt64) *int64 {
+	if !ni.Valid {
+		return nil
+	}
+	v := ni.Int64
+	return &v
+}
