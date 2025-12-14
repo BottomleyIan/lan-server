@@ -74,3 +74,11 @@ func trackDTOFromDB(tk db.Track) TrackDTO {
 		UpdatedAt:    tk.UpdatedAt,
 	}
 }
+
+func tracksDTOFromDB(rows []db.Track) []TrackDTO {
+	out := make([]TrackDTO, 0, len(rows))
+	for _, f := range rows {
+		out = append(out, trackDTOFromDB(f))
+	}
+	return out
+}

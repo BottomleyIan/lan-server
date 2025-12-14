@@ -81,6 +81,9 @@ func main() {
 			r.Get("/{id}/scan", h.ScanStatus)
 			r.Post("/", h.CreateFolder)
 		})
+		r.Route("/tracks", func(r chi.Router) {
+			r.Get("/", h.ListTracks)
+		})
 	})
 
 	addr := ":8080"

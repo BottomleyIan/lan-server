@@ -44,6 +44,31 @@ definitions:
         description: '"running" | "ok" | "error" | "skipped_unavailable"'
         type: string
     type: object
+  handlers.TrackDTO:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      ext:
+        type: string
+      filename:
+        type: string
+      folder_id:
+        type: integer
+      id:
+        type: integer
+      last_modified:
+        type: integer
+      last_seen_at:
+        type: string
+      rel_path:
+        type: string
+      size_bytes:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   handlers.createFolderRequest:
     properties:
       path:
@@ -170,4 +195,19 @@ paths:
       summary: Health check
       tags:
       - system
+  /tracks:
+    get:
+      description: List all non-deleted tracks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.TrackDTO'
+            type: array
+      summary: List tracks
+      tags:
+      - tracks
 swagger: "2.0"

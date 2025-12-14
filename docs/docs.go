@@ -188,6 +188,29 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tracks": {
+            "get": {
+                "description": "List all non-deleted tracks",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tracks"
+                ],
+                "summary": "List tracks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.TrackDTO"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -254,6 +277,44 @@ const docTemplate = `{
                 },
                 "status": {
                     "description": "\"running\" | \"ok\" | \"error\" | \"skipped_unavailable\"",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TrackDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "folder_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_modified": {
+                    "type": "integer"
+                },
+                "last_seen_at": {
+                    "type": "string"
+                },
+                "rel_path": {
+                    "type": "string"
+                },
+                "size_bytes": {
+                    "type": "integer"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
