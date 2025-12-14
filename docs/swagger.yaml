@@ -1,16 +1,26 @@
 basePath: /api
 definitions:
-  db.Folder:
+  handlers.FolderDTO:
     properties:
-      createdAt:
+      available:
+        type: boolean
+      created_at:
         type: string
-      deletedAt: {}
+      deleted_at:
+        type: string
       id:
-        format: int64
         type: integer
+      last_scan_at:
+        type: string
+      last_scan_error:
+        type: string
+      last_scan_status:
+        type: string
+      last_seen_at:
+        type: string
       path:
         type: string
-      updatedAt:
+      updated_at:
         type: string
     type: object
   handlers.Health:
@@ -18,6 +28,20 @@ definitions:
       status:
         type: string
       time:
+        type: string
+    type: object
+  handlers.ScanDTO:
+    properties:
+      error:
+        type: string
+      finished_at:
+        type: string
+      folder_id:
+        type: integer
+      started_at:
+        type: string
+      status:
+        description: '"running" | "ok" | "error" | "skipped_unavailable"'
         type: string
     type: object
   handlers.createFolderRequest:
@@ -42,7 +66,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Folder'
+              $ref: '#/definitions/handlers.FolderDTO'
             type: array
       summary: List folders
       tags:
@@ -64,7 +88,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Folder'
+            $ref: '#/definitions/handlers.FolderDTO'
       summary: Create folder
       tags:
       - folders
@@ -82,8 +106,41 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Folder'
+            $ref: '#/definitions/handlers.FolderDTO'
       summary: Get folder
+      tags:
+      - folders
+  /folders/{id}/scan:
+    get:
+      description: Get the most recent scan status for a folder
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ScanDTO'
+      summary: Get scan status
+      tags:
+      - folders
+    post:
+      description: Start a scan of a folder root and update indexed tracks
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/handlers.ScanDTO'
+      summary: Trigger folder scan
       tags:
       - folders
   /health:

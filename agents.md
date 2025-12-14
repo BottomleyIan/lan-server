@@ -1,117 +1,137 @@
-# Agent Instructions for This Repository
+# AGENTS.md — Working Agreement for This Repo
 
-This file exists to ensure **continuity, correctness, and efficiency** when working with automated agents or future contributors.
-
----
-
-## High-Level Intent
-
-This project is a **local music indexing and API server**, not a file-serving daemon and not a streaming-first system.
-
-Key goals:
-
-* Deterministic behavior
-* Clear separation of concerns
-* SQLite as an index, not a primary data store
-* Designed to work even when media volumes are intermittently unavailable
+This file describes how to work on this repository (for automated agents and humans) without losing architectural intent.
 
 ---
 
-## Core Architectural Rules
+## What This Project Is
 
-### 1. Filesystem vs Database
-
-* Filesystem is the **source of truth**
-* Database is a **search/index layer**
-* Indexed data is preserved even if files are temporarily unavailable
-
-### 2. Folder Semantics
-
-* `folders` table contains **root scan locations only**
-* Subdirectories are **not** stored as separate rows
-* Files are linked to roots using relative paths
-
-### 3. Availability
-
-* Volume availability is **runtime state**
-* Stored fields represent *last known* state
-* Do not delete or invalidate tracks when a root is unavailable
+A **local network** Go server that indexes a music library on disk into SQLite and exposes a JSON API.
+The filesystem remains the source of truth; SQLite is a fast index/cache.
 
 ---
 
-## Code Structure Rules
+## Core Design Rules
 
-* Shared dependencies go in `internal/app.App`
-* HTTP handlers live in `internal/handlers`
-* Handlers are methods, not anonymous functions
-* Routing uses `chi`
-* Swagger annotations must live directly above handler methods
-* Database access must go through sqlc-generated code
+### Filesystem vs Database
+
+* Filesystem = truth
+* DB = index/cache
+* DB must remain rebuildable from disk
+
+### Folder Semantics
+
+* `folders` table stores **scan roots only**
+* Do **not** store every subdirectory as a row
+* Tracks are linked to roots and stored via `rel_path` (relative path)
+
+### Availability & Unmounted Volumes
+
+* Roots may not be mounted (external SSD/NAS)
+* Keep indexed data even if a root is unavailable
+* Default queries should exclude unavailable roots (`folders.available = 1`)
+* Provide optional “include unavailable” behavior for admin/debug
+
+### Soft Delete
+
+* Use `deleted_at` for tracks and roots
+* Missing files are detected via scanning and soft-deleted (not hard deleted)
 
 ---
 
-## Database Rules
+## Package Responsibilities
 
-* All schema changes must be migrations
-* All queries must be written in SQL and compiled via sqlc
-* Avoid ORMs
-* Prefer explicit fields over generic JSON blobs
+### `internal/app`
+
+Holds shared dependencies (currently DB + sqlc Queries).
+Do not put HTTP or scan logic here.
+
+### `internal/services/fs`
+
+Filesystem abstraction:
+
+* interface returning `io/fs` types
+* OS implementation uses `os.Stat` + `filepath.WalkDir`
+
+### `internal/services/scanner`
+
+Scan logic:
+
+* no HTTP awareness
+* accepts `context.Context`
+* uses FS interface + sqlc Queries
+* respects cancellation via `ctx.Done()`
+
+### `internal/handlers`
+
+HTTP layer:
+
+* thin wrappers
+* convert DB types to API DTOs
+* Swagger annotations live here
+* never return sqlc structs directly in Swagger responses (Swagger can’t parse `sql.Null*`)
+
+### `internal/dbtypes`
+
+Contains type aliases to `database/sql` null types:
+
+* `NullTime`, `NullString`
+  Used because sqlc import inference with SQLite/null types can be flaky. sqlc should reference `dbtypes.*` rather than `sql.*`.
 
 ---
 
-## Swagger / API Documentation
+## Swagger Rules
 
-* Swagger is documentation, not validation
-* Swagger must reflect real behavior
-* `@Router` paths must match actual routes
-* Use DTOs if exposing DB types becomes awkward
+* Subtree route for `net/http` mux: use `/swagger/` (not `*`)
+* Swagger annotations must be in doc comments directly above **named** handlers
+* API types must be DTOs (no `sql.NullTime` / `sql.NullString` fields)
+* Regenerate docs after changing annotations:
+
+  * `swag init -g main.go -d cmd/server,internal/handlers`
 
 ---
 
-## Agent Workflow Requirement (IMPORTANT)
+## Database & Migrations Rules
 
-**Any time an agent is used to assist development:**
+* Migrations are embedded and applied at startup
+* Current approach is create-only (safe to run repeatedly)
+* If introducing multiple migrations later, consider a `schema_migrations` table to avoid reapplying large scripts
 
-1. The prompt or discussion **must be summarized** in a Markdown file
-2. The summary must include:
+---
 
-   * What was changed
-   * Why the change was made
-   * Any architectural decisions
-3. This Markdown file should be committed **alongside the code changes**
+## Prompt / Change Summary Requirement (IMPORTANT)
 
-This ensures:
+Whenever an agent is used to assist development:
 
-* Architectural intent is preserved
-* Changes are auditable
-* Future agents can reason correctly without re-discovery
+1. Create a Markdown summary of the prompt/decisions and what changed.
+2. Include:
+
+   * What changed
+   * Why it changed
+   * Any new conventions/decisions
+   * Follow-ups / TODOs
+3. Commit this summary alongside the code changes.
 
 Suggested location:
 
 ```
-docs/changes/YYYY-MM-DD-description.md
+docs/changes/YYYY-MM-DD-short-description.md
 ```
 
 ---
 
-## What Not To Do
+## What NOT To Do
 
-* Do not auto-index every directory as a DB row
-* Do not tie DB identity to absolute paths
-* Do not assume volumes are always mounted
-* Do not introduce heavy frameworks
-* Do not hide logic inside middleware magic
-
----
-
-## Philosophy
-
-Favor:
-
-* Explicitness over cleverness
-* Rebuildability over brittleness
-* Simplicity over premature optimization
-
-If unsure, **document the decision**.
+* Don’t make scans a GET endpoint (use POST to trigger, GET to observe status)
+* Don’t store absolute file paths as track identity (use `folder_id + rel_path`)
+* Don’t update per-track “availability” when a volume unmounts (folder-level availability)
+* Don’t leak DB-layer null types into API responses
 
 ---
+
+## Implementation Defaults
+
+* Use `context.Context` as the first arg to any function that does I/O or DB calls
+* Prefer explicit errors and typed sentinel errors for mapping to HTTP responses
+* Keep handler logic thin; keep scan logic in scanner service
+

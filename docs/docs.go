@@ -31,7 +31,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Folder"
+                                "$ref": "#/definitions/handlers.FolderDTO"
                             }
                         }
                     }
@@ -64,7 +64,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Folder"
+                            "$ref": "#/definitions/handlers.FolderDTO"
                         }
                     }
                 }
@@ -92,7 +92,57 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Folder"
+                            "$ref": "#/definitions/handlers.FolderDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/folders/{id}/scan": {
+            "get": {
+                "description": "Get the most recent scan status for a folder",
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Get scan status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ScanDTO"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Start a scan of a folder root and update indexed tracks",
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Trigger folder scan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ScanDTO"
                         }
                     }
                 }
@@ -120,21 +170,37 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "db.Folder": {
+        "handlers.FolderDTO": {
             "type": "object",
             "properties": {
-                "createdAt": {
+                "available": {
+                    "type": "boolean"
+                },
+                "created_at": {
                     "type": "string"
                 },
-                "deletedAt": {},
+                "deleted_at": {
+                    "type": "string"
+                },
                 "id": {
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
+                },
+                "last_scan_at": {
+                    "type": "string"
+                },
+                "last_scan_error": {
+                    "type": "string"
+                },
+                "last_scan_status": {
+                    "type": "string"
+                },
+                "last_seen_at": {
+                    "type": "string"
                 },
                 "path": {
                     "type": "string"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -146,6 +212,27 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "time": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ScanDTO": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "folder_id": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "\"running\" | \"ok\" | \"error\" | \"skipped_unavailable\"",
                     "type": "string"
                 }
             }

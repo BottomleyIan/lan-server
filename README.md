@@ -1,161 +1,179 @@
 # Music Server (Local Network)
 
-This project is a **local-network Go web server** for indexing and serving music files.
-It exposes a JSON API (documented via Swagger/OpenAPI) and is intended to be paired with a React (or similar) frontend.
+A local-network Go server for indexing a music library on disk and exposing it via a JSON API (with Swagger docs). Designed for macOS initially, with a React frontend planned.
 
-The system is designed to:
+This project indexes filesystem content into SQLite for fast browsing/searching, while treating the filesystem as the source of truth.
 
-* Run on macOS (initially), LAN-only
-* Index music files from user-defined root folders
-* Store metadata in SQLite for fast searching
-* Remain functional even when external volumes are temporarily unavailable
+---
+
+## Current Status
+
+Implemented:
+
+* Go server skeleton (`cmd/server`)
+* SQLite single-file DB (modernc driver)
+* Migrations applied on startup (**create-only**, no destructive migration)
+* sqlc-generated query layer
+* Swagger docs (swaggo + http-swagger)
+* HTTP handlers moved to `internal/handlers`
+* DTO layer in handlers (no `sql.NullTime` leakage to Swagger/JSON)
+* Scan service foundation:
+
+  * `internal/services/fs` provides an FS abstraction (OS-backed now)
+  * `internal/services/scanner` walks roots, filters audio files, captures size + mtime, and upserts tracks
+
+Planned next:
+
+* Finish scan bookkeeping (Start/Finish scan status + mark missing tracks)
+* Add chi router + middleware (if not already switched)
+* Add endpoints for folders/tracks/search + scan trigger/status
+* Add metadata extraction and FTS search later
 
 ---
 
 ## Tech Stack
 
-### Backend
+Backend:
 
-* **Go**
-* **net/http** + **chi** (routing)
-* **SQLite** (single-file DB)
-* **sqlc** (type-safe SQL access)
-* **modernc.org/sqlite** (pure Go SQLite driver)
-* **Swagger (swaggo)** for API documentation
+* Go
+* `net/http` (router currently plain mux; chi recommended next)
+* SQLite (WAL mode)
+* `modernc.org/sqlite` driver
+* `sqlc` for typed SQL
+* Swagger via `swaggo/swag` + `http-swagger`
 
-### Frontend (planned)
+Frontend:
 
-* React or similar SPA
-* Consumes JSON API only (no server-side rendering)
+* React (planned)
 
 ---
 
-## Project Structure
+## Project Layout
 
 ```
-cmd/server/           # main entry point
+cmd/server/                  # main entrypoint
 internal/
-  app/                # App-wide dependency container
-  handlers/           # HTTP handlers (Swagger-annotated)
-  db/                 # sqlc-generated DB code
-  store/              # migrations and DB helpers
-docs/                 # Swagger-generated files
-```
-
----
-
-## Running the Server
-
-```bash
-go run ./cmd/server
-```
-
-Server runs on:
-
-```
-http://localhost:8080
-```
-
-Swagger UI:
-
-```
-http://localhost:8080/swagger/index.html
+  app/                       # dependency container (DB + Queries)
+  db/                        # sqlc-generated code
+  dbtypes/                   # aliases for NullTime/NullString (sqlc import workaround)
+  handlers/                  # HTTP handlers + DTOs + mappers
+  services/
+    fs/                      # FS interface + OS implementation (WalkDir/Stat)
+    scanner/                 # scan logic (filesystem -> DB upserts)
+  store/                     # migrations embed + ApplyMigrations
+docs/                        # swagger generated (not watched by air)
+db/query/                    # sqlc query files
 ```
 
 ---
 
 ## Database
 
-### SQLite
+### Philosophy
 
-* Single file (default: `./data.sqlite`)
-* WAL mode enabled
-* Foreign keys enabled per connection
+* Filesystem is the **source of truth**
+* SQLite DB is an **index/cache** for fast queries
+* Roots may be unavailable (unmounted volumes); keep indexed data but exclude unavailable by default
 
-### Current Tables
+### Tables
 
-#### `folders`
+#### `folders` (scan roots)
 
-Represents **root scan locations** only (not every directory).
+Root paths only (e.g. `/Users/.../Music`, `/Volumes/SSD/Music`).
+Includes cached availability + scan status:
 
-Example:
-
-* `/Users/ianbottomley/Music`
-* `/Volumes/SSD/Music`
-
-Fields:
-
-* `id`
-* `path`
-* `deleted_at`
-* `created_at`
-* `updated_at`
-
----
-
-## Planned Database Expansion
-
-### Folder Availability & Status
-
-Folders may be temporarily unavailable (e.g. external volumes not mounted).
-The system **retains indexed data** even when roots are unavailable.
-
-Planned additional fields for `folders`:
-
-* `available` (INTEGER 0/1)
+* `available` (0/1)
 * `last_seen_at`
 * `last_scan_at`
-* `last_scan_status` (`ok | error | skipped_unavailable`)
+* `last_scan_status` (`running|ok|error|skipped_unavailable`)
 * `last_scan_error`
 
----
+#### `tracks` (indexed files)
 
-### Tracks / Files (planned)
+Tracks belong to a root folder and store file facts:
 
-Each music file will:
-
-* Belong to exactly one root folder
-* Be stored with a **relative path** from that root
-
-Planned tables:
-
-* `tracks`
-* `track_metadata`
-
-This allows:
-
-* Fast search
-* Stable identity across root moves
-* Rebuilding the index if needed
+* `folder_id`
+* `rel_path` (relative to folder root; unique per folder)
+* `filename`, `ext` (lowercase, no dot)
+* `size_bytes`
+* `last_modified` (unix seconds)
+* `last_seen_at` (used to mark missing files after a scan)
+* `deleted_at` (soft delete)
 
 ---
 
-## Design Principles
+## Migrations
 
-* **Filesystem is the source of truth**
-* **Database is an index/cache**
-* Indexed data is never deleted just because a volume is unavailable
-* Availability is derived and cached, not assumed permanent
-* No filesystem watchers required initially; explicit scans are used
+Migrations are embedded and applied at startup. Current approach is **create-only** migrations (safe to run repeatedly).
+At this stage the project uses **one init migration file**.
 
 ---
 
-## Development Notes
+## Swagger
 
-* Handlers are methods on a `Handlers` struct
-* Shared dependencies live in `internal/app.App`
-* Swagger annotations live directly above handler methods
-* `chi` is used for routing and middleware
-* Air is used for live reload (Swagger generation excluded from watch)
+Swagger UI is served at:
+
+* `http://localhost:8080/swagger/index.html`
+
+Important notes:
+
+* `http.ServeMux` subtree routing requires `/swagger/` (not `/swagger/*`)
+* Swagger annotations must sit directly above named handler methods/functions
+* API returns DTOs (not sqlc structs) to avoid Swagger issues with `sql.NullTime`
+
+---
+
+## Running
+
+### Install tools
+
+```bash
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+### Generate sqlc
+
+```bash
+sqlc generate
+```
+
+### Generate swagger
+
+From repo root (typical):
+
+```bash
+rm -rf docs
+swag init -g main.go -d cmd/server,internal/handlers
+```
+
+### Run server
+
+```bash
+go run ./cmd/server
+```
 
 ---
 
-## Next Steps (Planned)
+## Scanning (current implementation direction)
 
-* Add `tracks` + metadata tables
-* Implement folder scan logic
-* Add search endpoints
-* Build React UI
-* Optional: background scan jobs
+Scanner walks a folder root and upserts tracks:
+
+* Uses `services/fs` interface for testability and future non-OS implementations
+* Uses `filepath.Rel(root, path)` to store `rel_path`
+* Uses `DirEntry.Info()` to capture `size_bytes` and `mtime`
+
+Next scan milestones:
+
+* Use `StartFolderScan` to obtain a scan start timestamp
+* After scan: mark missing tracks via `last_seen_at < scan_start`
+* Set folder scan status via Finish OK / Unavailable / Error
 
 ---
+
+## Notes for Future Work
+
+* Prefer chi for routing once endpoints expand (path params, middleware)
+* Consider FTS5 for text search before embeddings
+* Embeddings are a “future fun extra” and should hang off stable `track_id` if added later
+

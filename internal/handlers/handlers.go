@@ -6,14 +6,19 @@ import (
 	"time"
 
 	"bottomley.ian/musicserver/internal/app"
+	"bottomley.ian/musicserver/internal/services/scanner"
 )
 
 type Handlers struct {
-	App *app.App
+	App     *app.App
+	Scanner *scanner.Scanner
 }
 
-func New(a *app.App) *Handlers {
-	return &Handlers{App: a}
+func New(a *app.App, s *scanner.Scanner) *Handlers {
+	return &Handlers{
+		App:     a,
+		Scanner: s,
+	}
 }
 
 type Health struct {

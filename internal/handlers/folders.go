@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-
 )
 
 // ListFolders godoc
@@ -14,7 +14,7 @@ import (
 // @Description List all non-deleted folders
 // @Tags folders
 // @Produce json
-// @Success 200 {array} db.Folder
+// @Success 200 {array} handlers.FolderDTO
 // @Router /folders [get]
 func (h *Handlers) ListFolders(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -27,7 +27,7 @@ func (h *Handlers) ListFolders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, folders)
+	writeJSON(w, foldersDTOFromDB(folders))
 }
 
 type createFolderRequest struct {
@@ -41,7 +41,7 @@ type createFolderRequest struct {
 // @Accept json
 // @Produce json
 // @Param request body handlers.createFolderRequest true "Folder to create"
-// @Success 200 {object} db.Folder
+// @Success 200 {object} handlers.FolderDTO
 // @Router /folders [post]
 func (h *Handlers) CreateFolder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -64,7 +64,7 @@ func (h *Handlers) CreateFolder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, row)
+	writeJSON(w, folderDTOFromDB(row))
 }
 
 // GetFolder godoc
@@ -72,7 +72,7 @@ func (h *Handlers) CreateFolder(w http.ResponseWriter, r *http.Request) {
 // @Tags folders
 // @Produce json
 // @Param id path int true "Folder ID"
-// @Success 200 {object} db.Folder
+// @Success 200 {object} handlers.FolderDTO
 // @Router /folders/{id} [get]
 func (h *Handlers) GetFolder(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -88,6 +88,62 @@ func (h *Handlers) GetFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, folder)
+	writeJSON(w, folderDTOFromDB(folder))
 }
 
+// ScanFolder godoc
+// @Summary Trigger folder scan
+// @Description Start a scan of a folder root and update indexed tracks
+// @Tags folders
+// @Param id path int true "Folder ID"
+// @Success 202 {object} ScanDTO
+// @Router /folders/{id}/scan [post]
+func (h *Handlers) ScanFolder(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	f, err := h.App.Queries.GetFolderByID(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if f.DeletedAt.Valid {
+		http.Error(w, "folder not found", http.StatusNotFound)
+		return
+	}
+	startedAt, err := h.App.Queries.StartFolderScan(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ctx := r.Context()
+	err = h.Scanner.ScanFolder(ctx, id)
+
+	dto := ScanDTO{
+		FolderID:  id,
+		Status:    "running",
+		StartedAt: startedAt.Time,
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	writeJSON(w, dto)
+}
+
+// GetScanStatus godoc
+// @Summary Get scan status
+// @Description Get the most recent scan status for a folder
+// @Tags folders
+// @Param id path int true "Folder ID"
+// @Success 200 {object} ScanDTO
+// @Router /folders/{id}/scan [get]
+func (h *Handlers) ScanStatus(w http.ResponseWriter, r *http.Request) {
+	// implementation later
+}

@@ -7,12 +7,14 @@ package db
 
 import (
 	"context"
+
+	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
 const createFolder = `-- name: CreateFolder :one
 INSERT INTO folders (path)
 VALUES (?)
-RETURNING id, path, deleted_at, created_at, updated_at
+RETURNING id, path, deleted_at, available, last_seen_at, last_scan_at, last_scan_status, last_scan_error, created_at, updated_at
 `
 
 func (q *Queries) CreateFolder(ctx context.Context, path string) (Folder, error) {
@@ -22,14 +24,73 @@ func (q *Queries) CreateFolder(ctx context.Context, path string) (Folder, error)
 		&i.ID,
 		&i.Path,
 		&i.DeletedAt,
+		&i.Available,
+		&i.LastSeenAt,
+		&i.LastScanAt,
+		&i.LastScanStatus,
+		&i.LastScanError,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const finishFolderScanError = `-- name: FinishFolderScanError :exec
+UPDATE folders
+SET
+  last_scan_status = 'error',
+  last_scan_error = ?,
+  last_seen_at = CURRENT_TIMESTAMP,
+  available = 1
+WHERE id = ?
+`
+
+type FinishFolderScanErrorParams struct {
+	LastScanError dbtypes.NullString
+	ID            int64
+}
+
+func (q *Queries) FinishFolderScanError(ctx context.Context, arg FinishFolderScanErrorParams) error {
+	_, err := q.db.ExecContext(ctx, finishFolderScanError, arg.LastScanError, arg.ID)
+	return err
+}
+
+const finishFolderScanOK = `-- name: FinishFolderScanOK :exec
+UPDATE folders
+SET
+  last_scan_status = 'ok',
+  last_scan_error = NULL,
+  last_seen_at = CURRENT_TIMESTAMP,
+  available = 1
+WHERE id = ?
+`
+
+func (q *Queries) FinishFolderScanOK(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, finishFolderScanOK, id)
+	return err
+}
+
+const finishFolderScanUnavailable = `-- name: FinishFolderScanUnavailable :exec
+UPDATE folders
+SET
+  last_scan_status = 'skipped_unavailable',
+  last_scan_error = ?,
+  available = 0
+WHERE id = ?
+`
+
+type FinishFolderScanUnavailableParams struct {
+	LastScanError dbtypes.NullString
+	ID            int64
+}
+
+func (q *Queries) FinishFolderScanUnavailable(ctx context.Context, arg FinishFolderScanUnavailableParams) error {
+	_, err := q.db.ExecContext(ctx, finishFolderScanUnavailable, arg.LastScanError, arg.ID)
+	return err
+}
+
 const getFolderByID = `-- name: GetFolderByID :one
-SELECT id, path, deleted_at, created_at, updated_at
+SELECT id, path, deleted_at, available, last_seen_at, last_scan_at, last_scan_status, last_scan_error, created_at, updated_at
 FROM folders
 WHERE id = ?
 `
@@ -41,6 +102,11 @@ func (q *Queries) GetFolderByID(ctx context.Context, id int64) (Folder, error) {
 		&i.ID,
 		&i.Path,
 		&i.DeletedAt,
+		&i.Available,
+		&i.LastSeenAt,
+		&i.LastScanAt,
+		&i.LastScanStatus,
+		&i.LastScanError,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -48,7 +114,7 @@ func (q *Queries) GetFolderByID(ctx context.Context, id int64) (Folder, error) {
 }
 
 const listFolders = `-- name: ListFolders :many
-SELECT id, path, deleted_at, created_at, updated_at
+SELECT id, path, deleted_at, available, last_seen_at, last_scan_at, last_scan_status, last_scan_error, created_at, updated_at
 FROM folders
 WHERE deleted_at IS NULL
 ORDER BY path
@@ -67,6 +133,11 @@ func (q *Queries) ListFolders(ctx context.Context) ([]Folder, error) {
 			&i.ID,
 			&i.Path,
 			&i.DeletedAt,
+			&i.Available,
+			&i.LastSeenAt,
+			&i.LastScanAt,
+			&i.LastScanStatus,
+			&i.LastScanError,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -83,14 +154,22 @@ func (q *Queries) ListFolders(ctx context.Context) ([]Folder, error) {
 	return items, nil
 }
 
-const restoreFolder = `-- name: RestoreFolder :exec
+const setFolderAvailability = `-- name: SetFolderAvailability :exec
 UPDATE folders
-SET deleted_at = NULL
-WHERE id = ? AND deleted_at IS NOT NULL
+SET
+  available = ?,
+  last_seen_at = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE last_seen_at END
+WHERE id = ?
 `
 
-func (q *Queries) RestoreFolder(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, restoreFolder, id)
+type SetFolderAvailabilityParams struct {
+	Available int64
+	Column2   interface{}
+	ID        int64
+}
+
+func (q *Queries) SetFolderAvailability(ctx context.Context, arg SetFolderAvailabilityParams) error {
+	_, err := q.db.ExecContext(ctx, setFolderAvailability, arg.Available, arg.Column2, arg.ID)
 	return err
 }
 
@@ -103,4 +182,23 @@ WHERE id = ? AND deleted_at IS NULL
 func (q *Queries) SoftDeleteFolder(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, softDeleteFolder, id)
 	return err
+}
+
+const startFolderScan = `-- name: StartFolderScan :one
+UPDATE folders
+SET
+  last_scan_at = CURRENT_TIMESTAMP,
+  last_scan_status = 'running',
+  last_scan_error = NULL
+WHERE id = ?
+RETURNING last_scan_at
+`
+
+// Start a scan and capture a scan "start time" in DB timestamp format.
+// Use the returned last_scan_at value as the scan_start_time passed to MarkMissingTracksForFolder.
+func (q *Queries) StartFolderScan(ctx context.Context, id int64) (dbtypes.NullTime, error) {
+	row := q.db.QueryRowContext(ctx, startFolderScan, id)
+	var last_scan_at dbtypes.NullTime
+	err := row.Scan(&last_scan_at)
+	return last_scan_at, err
 }

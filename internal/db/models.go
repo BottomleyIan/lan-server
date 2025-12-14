@@ -6,12 +6,33 @@ package db
 
 import (
 	"time"
+
+	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
 type Folder struct {
-	ID        int64
-	Path      string
-	DeletedAt interface{}
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID             int64
+	Path           string
+	DeletedAt      dbtypes.NullTime
+	Available      int64
+	LastSeenAt     dbtypes.NullTime
+	LastScanAt     dbtypes.NullTime
+	LastScanStatus dbtypes.NullString
+	LastScanError  dbtypes.NullString
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type Track struct {
+	ID           int64
+	FolderID     int64
+	RelPath      string
+	Filename     string
+	Ext          string
+	SizeBytes    int64
+	LastModified int64
+	LastSeenAt   time.Time
+	DeletedAt    dbtypes.NullTime
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
