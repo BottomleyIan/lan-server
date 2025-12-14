@@ -14,6 +14,7 @@
 - Added project-level `TODO.md` and linked it from `README.md` for quick task tracking.
 - Updated TODOs: added high-priority cover art handling/thumbnail task; moved embeddings note into low-priority checkbox; removed embeddings note from README.
 - Added low-priority TODO to serve curl-friendly terminal responses when detecting curl User-Agent.
+- Added playlists support: new migration/tables (`playlists`, `playlist_tracks`), sqlc queries, DTO/mappers, routes for list/get/post/put, playlist-track management (list/add/update position), and Swagger regeneration. Delete existing SQLite DB before restart to apply create-only migrations.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

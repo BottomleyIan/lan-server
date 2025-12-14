@@ -100,6 +100,17 @@ func main() {
 			r.Put("/{id}", h.UpdateAlbum)
 			r.Delete("/{id}", h.DeleteAlbum)
 		})
+		r.Route("/playlists", func(r chi.Router) {
+			r.Get("/", h.ListPlaylists)
+			r.Post("/", h.CreatePlaylist)
+			r.Get("/{id}", h.GetPlaylist)
+			r.Put("/{id}", h.UpdatePlaylist)
+			r.Route("/{id}/tracks", func(r chi.Router) {
+				r.Get("/", h.ListPlaylistTracks)
+				r.Post("/", h.AddPlaylistTrack)
+				r.Put("/{track_id}", h.UpdatePlaylistTrack)
+			})
+		})
 	})
 
 	addr := ":8080"

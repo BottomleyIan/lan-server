@@ -40,6 +40,24 @@ type Folder struct {
 	UpdatedAt      time.Time
 }
 
+type Playlist struct {
+	ID        int64
+	Name      string
+	DeletedAt dbtypes.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type PlaylistTrack struct {
+	ID         int64
+	PlaylistID int64
+	TrackID    int64
+	Position   int64
+	DeletedAt  dbtypes.NullTime
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 type Track struct {
 	ID           int64
 	FolderID     int64

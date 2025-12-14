@@ -94,3 +94,23 @@ sql:
             go_type: "time.Time"
           - column: "tracks.updated_at"
             go_type: "time.Time"
+
+          - column: "playlists.deleted_at"
+            go_type:
+              import: "bottomley.ian/musicserver/internal/dbtypes"
+              package: "dbtypes"
+              type: "NullTime"
+          - column: "playlists.created_at"
+            go_type: "time.Time"
+          - column: "playlists.updated_at"
+            go_type: "time.Time"
+
+          - column: "playlist_tracks.deleted_at"
+            go_type:
+              import: "bottomley.ian/musicserver/internal/dbtypes"
+              package: "dbtypes"
+              type: "NullTime"
+          - column: "playlist_tracks.created_at"
+            go_type: "time.Time"
+          - column: "playlist_tracks.updated_at"
+            go_type: "time.Time"

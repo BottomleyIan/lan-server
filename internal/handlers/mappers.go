@@ -124,3 +124,79 @@ func albumsDTOFromDB(rows []db.Album) []AlbumDTO {
 	}
 	return out
 }
+
+func playlistDTOFromDB(p db.Playlist) PlaylistDTO {
+	return PlaylistDTO{
+		ID:        p.ID,
+		Name:      p.Name,
+		DeletedAt: timePtrFromNullTime(p.DeletedAt),
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+}
+
+func playlistsDTOFromDB(rows []db.Playlist) []PlaylistDTO {
+	out := make([]PlaylistDTO, 0, len(rows))
+	for _, p := range rows {
+		out = append(out, playlistDTOFromDB(p))
+	}
+	return out
+}
+
+func playlistTrackDTOFromRow(pt db.ListPlaylistTracksRow) PlaylistTrackDTO {
+	track := TrackDTO{
+		ID:           pt.TrackRowID,
+		FolderID:     pt.FolderID,
+		ArtistID:     int64PtrFromNullInt64(pt.ArtistID),
+		AlbumID:      int64PtrFromNullInt64(pt.AlbumID),
+		RelPath:      pt.RelPath,
+		Filename:     pt.Filename,
+		Ext:          pt.Ext,
+		Genre:        stringPtrFromNullString(pt.Genre),
+		Year:         int64PtrFromNullInt64(pt.Year),
+		Rating:       int64PtrFromNullInt64(pt.Rating),
+		SizeBytes:    pt.SizeBytes,
+		LastModified: pt.LastModified,
+		LastSeenAt:   pt.LastSeenAt,
+		DeletedAt:    timePtrFromNullTime(pt.TrackDeletedAt),
+		CreatedAt:    pt.TrackCreatedAt,
+		UpdatedAt:    pt.TrackUpdatedAt,
+	}
+
+	return PlaylistTrackDTO{
+		ID:         pt.PlaylistTrackID,
+		PlaylistID: pt.PlaylistID,
+		TrackID:    pt.TrackID,
+		Position:   pt.Position,
+		DeletedAt:  timePtrFromNullTime(pt.PlaylistTrackDeletedAt),
+		CreatedAt:  pt.PlaylistTrackCreatedAt,
+		UpdatedAt:  pt.PlaylistTrackUpdatedAt,
+		Track:      &track,
+	}
+}
+
+func playlistTracksDTOFromRows(rows []db.ListPlaylistTracksRow) []PlaylistTrackDTO {
+	out := make([]PlaylistTrackDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, playlistTrackDTOFromRow(row))
+	}
+	return out
+}
+
+func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *db.Track) PlaylistTrackDTO {
+	var trackDTO *TrackDTO
+	if track != nil {
+		td := trackDTOFromDB(*track)
+		trackDTO = &td
+	}
+	return PlaylistTrackDTO{
+		ID:         pt.ID,
+		PlaylistID: pt.PlaylistID,
+		TrackID:    pt.TrackID,
+		Position:   pt.Position,
+		DeletedAt:  timePtrFromNullTime(pt.DeletedAt),
+		CreatedAt:  pt.CreatedAt,
+		UpdatedAt:  pt.UpdatedAt,
+		Track:      trackDTO,
+	}
+}

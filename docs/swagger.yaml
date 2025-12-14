@@ -58,6 +58,38 @@ definitions:
       time:
         type: string
     type: object
+  handlers.PlaylistDTO:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  handlers.PlaylistTrackDTO:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      playlist_id:
+        type: integer
+      position:
+        type: integer
+      track:
+        $ref: '#/definitions/handlers.TrackDTO'
+      track_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   handlers.ScanDTO:
     properties:
       error:
@@ -107,9 +139,21 @@ definitions:
       year:
         type: integer
     type: object
+  handlers.addPlaylistTrackRequest:
+    properties:
+      position:
+        type: integer
+      track_id:
+        type: integer
+    type: object
   handlers.createFolderRequest:
     properties:
       path:
+        type: string
+    type: object
+  handlers.createPlaylistRequest:
+    properties:
+      name:
         type: string
     type: object
   handlers.updateAlbumRequest:
@@ -123,6 +167,11 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  handlers.updatePlaylistTrackRequest:
+    properties:
+      position:
+        type: integer
     type: object
   handlers.updateTrackRequest:
     properties:
@@ -392,6 +441,159 @@ paths:
       summary: Health check
       tags:
       - system
+  /playlists:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.PlaylistDTO'
+            type: array
+      summary: List playlists
+      tags:
+      - playlists
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playlist to create
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createPlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PlaylistDTO'
+      summary: Create playlist
+      tags:
+      - playlists
+  /playlists/{id}:
+    get:
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PlaylistDTO'
+      summary: Get playlist
+      tags:
+      - playlists
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Playlist update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createPlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PlaylistDTO'
+      summary: Update playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks:
+    get:
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.PlaylistTrackDTO'
+            type: array
+      summary: List tracks in a playlist
+      tags:
+      - playlists
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Track to add
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.addPlaylistTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PlaylistTrackDTO'
+      summary: Add a track to a playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks/{track_id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Playlist Track ID
+        in: path
+        name: track_id
+        required: true
+        type: integer
+      - description: New position
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updatePlaylistTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PlaylistTrackDTO'
+      summary: Update playlist track position
+      tags:
+      - playlists
   /tracks:
     get:
       description: List all non-deleted tracks

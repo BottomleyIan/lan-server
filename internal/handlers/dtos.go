@@ -58,3 +58,22 @@ type AlbumDTO struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 }
+
+type PlaylistDTO struct {
+	ID        int64      `json:"id"`
+	Name      string     `json:"name"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+type PlaylistTrackDTO struct {
+	ID         int64      `json:"id"`
+	PlaylistID int64      `json:"playlist_id"`
+	TrackID    int64      `json:"track_id"`
+	Position   int64      `json:"position"`
+	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	Track      *TrackDTO  `json:"track,omitempty"`
+}
