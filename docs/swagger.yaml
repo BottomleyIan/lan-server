@@ -93,6 +93,20 @@ paths:
       tags:
       - folders
   /folders/{id}:
+    delete:
+      description: Soft-delete a folder root
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Delete folder
+      tags:
+      - folders
     get:
       parameters:
       - description: Folder ID

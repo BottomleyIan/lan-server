@@ -76,6 +76,7 @@ func main() {
 		r.Route("/folders", func(r chi.Router) {
 			r.Get("/", h.ListFolders)
 			r.Get("/{id}", h.GetFolder)
+			r.Delete("/{id}", h.DeleteFolder)
 			r.Post("/{id}/scan", h.ScanFolder)
 			r.Get("/{id}/scan", h.ScanStatus)
 			r.Post("/", h.CreateFolder)

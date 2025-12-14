@@ -173,15 +173,29 @@ func (q *Queries) SetFolderAvailability(ctx context.Context, arg SetFolderAvaila
 	return err
 }
 
-const softDeleteFolder = `-- name: SoftDeleteFolder :exec
+const softDeleteFolder = `-- name: SoftDeleteFolder :one
 UPDATE folders
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = ? AND deleted_at IS NULL
+RETURNING id, path, deleted_at, available, last_seen_at, last_scan_at, last_scan_status, last_scan_error, created_at, updated_at
 `
 
-func (q *Queries) SoftDeleteFolder(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, softDeleteFolder, id)
-	return err
+func (q *Queries) SoftDeleteFolder(ctx context.Context, id int64) (Folder, error) {
+	row := q.db.QueryRowContext(ctx, softDeleteFolder, id)
+	var i Folder
+	err := row.Scan(
+		&i.ID,
+		&i.Path,
+		&i.DeletedAt,
+		&i.Available,
+		&i.LastSeenAt,
+		&i.LastScanAt,
+		&i.LastScanStatus,
+		&i.LastScanError,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const startFolderScan = `-- name: StartFolderScan :one

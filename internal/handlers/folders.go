@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -89,6 +90,34 @@ func (h *Handlers) GetFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, folderDTOFromDB(folder))
+}
+
+// DeleteFolder godoc
+// @Summary Delete folder
+// @Description Soft-delete a folder root
+// @Tags folders
+// @Param id path int true "Folder ID"
+// @Success 204
+// @Router /folders/{id} [delete]
+func (h *Handlers) DeleteFolder(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	_, err = h.App.Queries.SoftDeleteFolder(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ScanFolder godoc

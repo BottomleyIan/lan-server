@@ -14,10 +14,11 @@ SELECT *
 FROM folders
 WHERE id = ?;
 
--- name: SoftDeleteFolder :exec
+-- name: SoftDeleteFolder :one
 UPDATE folders
 SET deleted_at = CURRENT_TIMESTAMP
-WHERE id = ? AND deleted_at IS NULL;
+WHERE id = ? AND deleted_at IS NULL
+RETURNING *;
 
 -- name: SetFolderAvailability :exec
 UPDATE folders
