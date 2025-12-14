@@ -96,6 +96,8 @@ definitions:
         type: integer
       last_seen_at:
         type: string
+      rating:
+        type: integer
       rel_path:
         type: string
       size_bytes:
@@ -121,6 +123,11 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  handlers.updateTrackRequest:
+    properties:
+      rating:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -398,6 +405,50 @@ paths:
               $ref: '#/definitions/handlers.TrackDTO'
             type: array
       summary: List tracks
+      tags:
+      - tracks
+  /tracks/{id}:
+    get:
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TrackDTO'
+      summary: Get track
+      tags:
+      - tracks
+    put:
+      consumes:
+      - application/json
+      description: Update track metadata (rating 1-5 or clear)
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Track update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TrackDTO'
+      summary: Update track
       tags:
       - tracks
 swagger: "2.0"

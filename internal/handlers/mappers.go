@@ -70,6 +70,7 @@ func trackDTOFromDB(tk db.Track) TrackDTO {
 		Ext:          tk.Ext,
 		Genre:        stringPtrFromNullString(tk.Genre),
 		Year:         int64PtrFromNullInt64(tk.Year),
+		Rating:       int64PtrFromNullInt64(tk.Rating),
 		SizeBytes:    tk.SizeBytes,
 		LastModified: tk.LastModified,
 		LastSeenAt:   tk.LastSeenAt,

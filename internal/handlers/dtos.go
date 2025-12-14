@@ -25,6 +25,7 @@ type TrackDTO struct {
 	Ext          string     `json:"ext"`
 	Genre        *string    `json:"genre,omitempty"`
 	Year         *int64     `json:"year,omitempty"`
+	Rating       *int64     `json:"rating,omitempty"`
 	SizeBytes    int64      `json:"size_bytes"`
 	LastModified int64      `json:"last_modified"`
 	LastSeenAt   time.Time  `json:"last_seen_at"`

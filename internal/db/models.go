@@ -50,6 +50,7 @@ type Track struct {
 	Ext          string
 	Genre        dbtypes.NullString
 	Year         dbtypes.NullInt64
+	Rating       dbtypes.NullInt64
 	SizeBytes    int64
 	LastModified int64
 	LastSeenAt   time.Time

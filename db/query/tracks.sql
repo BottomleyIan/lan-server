@@ -22,6 +22,13 @@ FROM tracks
 WHERE folder_id = ? AND deleted_at IS NULL
 ORDER BY rel_path;
 
+-- Get a single track by ID (excluding deleted)
+-- name: GetTrackByID :one
+SELECT *
+FROM tracks
+WHERE id = ?
+  AND deleted_at IS NULL;
+
 -- Mark tracks missing if not seen during this scan pass.
 -- Pass scan_start_time from StartFolderScan (folders.last_scan_at returned value).
 -- name: MarkMissingTracksForFolder :exec
@@ -62,3 +69,11 @@ WHERE t.id = ?
   AND t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1;
+
+-- Update track rating (nullable)
+-- name: UpdateTrackRating :one
+UPDATE tracks
+SET rating = ?
+WHERE id = ?
+  AND deleted_at IS NULL
+RETURNING *;

@@ -83,6 +83,11 @@ sql:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullInt64"
+          - column: "tracks.rating"
+            go_type:
+              import: "bottomley.ian/musicserver/internal/dbtypes"
+              package: "dbtypes"
+              type: "NullInt64"
           - column: "tracks.last_seen_at"
             go_type: "time.Time"
           - column: "tracks.created_at"

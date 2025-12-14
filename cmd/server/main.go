@@ -83,6 +83,8 @@ func main() {
 		})
 		r.Route("/tracks", func(r chi.Router) {
 			r.Get("/", h.ListTracks)
+			r.Get("/{id}", h.GetTrack)
+			r.Put("/{id}", h.UpdateTrack)
 		})
 		r.Route("/artists", func(r chi.Router) {
 			r.Get("/", h.ListArtists)

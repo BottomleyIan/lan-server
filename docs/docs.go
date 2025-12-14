@@ -429,6 +429,73 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tracks/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tracks"
+                ],
+                "summary": "Get track",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Track ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TrackDTO"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update track metadata (rating 1-5 or clear)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tracks"
+                ],
+                "summary": "Update track",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Track ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Track update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateTrackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TrackDTO"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -578,6 +645,9 @@ const docTemplate = `{
                 "last_seen_at": {
                     "type": "string"
                 },
+                "rating": {
+                    "type": "integer"
+                },
                 "rel_path": {
                     "type": "string"
                 },
@@ -616,6 +686,14 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.updateTrackRequest": {
+            "type": "object",
+            "properties": {
+                "rating": {
+                    "type": "integer"
                 }
             }
         }

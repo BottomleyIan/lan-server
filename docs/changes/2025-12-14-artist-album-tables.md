@@ -7,6 +7,7 @@
 - Added `.gitignore` rules for SQLite artifacts and removed the checked-in `data.sqlite` files from version control.
 - Added GET/PUT/DELETE handlers for artists and albums (DTO-based), refreshed track DTO/swagger, and regenerated Swagger docs.
 - Added list endpoints for artists and albums, plus corresponding sqlc queries and Swagger updates.
+- Added `rating` (1–5) to tracks, track DTO/mappers, track GET/PUT endpoints to update rating, and Swagger regeneration.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

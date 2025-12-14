@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS tracks (
 
   genre TEXT NULL,
   year INTEGER NULL,
+  rating INTEGER NULL CHECK (rating BETWEEN 1 AND 5),
 
   size_bytes INTEGER NOT NULL,
   last_modified INTEGER NOT NULL,   -- unix seconds since epoch
