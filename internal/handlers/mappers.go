@@ -233,7 +233,6 @@ func albumSummaryFromAlbum(al db.Album, artist db.Artist) *AlbumSummaryDTO {
 	return &AlbumSummaryDTO{
 		ID:        al.ID,
 		ArtistID:  al.ArtistID,
-		Artist:    artistSummaryFromArtist(artist),
 		Title:     al.Title,
 		ImagePath: stringPtrFromNullString(al.ImagePath),
 	}

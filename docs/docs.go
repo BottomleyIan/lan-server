@@ -876,9 +876,6 @@ const docTemplate = `{
         "handlers.AlbumSummaryDTO": {
             "type": "object",
             "properties": {
-                "artist": {
-                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
-                },
                 "artist_id": {
                     "type": "integer"
                 },

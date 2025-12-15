@@ -70,11 +70,10 @@ type ArtistSummaryDTO struct {
 }
 
 type AlbumSummaryDTO struct {
-	ID        int64             `json:"id"`
-	ArtistID  int64             `json:"artist_id"`
-	Artist    *ArtistSummaryDTO `json:"artist,omitempty"`
-	Title     string            `json:"title"`
-	ImagePath *string           `json:"image_path,omitempty"`
+	ID        int64   `json:"id"`
+	ArtistID  int64   `json:"artist_id"`
+	Title     string  `json:"title"`
+	ImagePath *string `json:"image_path,omitempty"`
 }
 
 type PlaylistDTO struct {

@@ -21,8 +21,6 @@ definitions:
     type: object
   handlers.AlbumSummaryDTO:
     properties:
-      artist:
-        $ref: '#/definitions/handlers.ArtistSummaryDTO'
       artist_id:
         type: integer
       id:
