@@ -2,6 +2,8 @@ basePath: /api
 definitions:
   handlers.AlbumDTO:
     properties:
+      artist:
+        $ref: '#/definitions/handlers.ArtistSummaryDTO'
       artist_id:
         type: integer
       created_at:
@@ -17,6 +19,19 @@ definitions:
       updated_at:
         type: string
     type: object
+  handlers.AlbumSummaryDTO:
+    properties:
+      artist:
+        $ref: '#/definitions/handlers.ArtistSummaryDTO'
+      artist_id:
+        type: integer
+      id:
+        type: integer
+      image_path:
+        type: string
+      title:
+        type: string
+    type: object
   handlers.ArtistDTO:
     properties:
       created_at:
@@ -28,6 +43,13 @@ definitions:
       name:
         type: string
       updated_at:
+        type: string
+    type: object
+  handlers.ArtistSummaryDTO:
+    properties:
+      id:
+        type: integer
+      name:
         type: string
     type: object
   handlers.FolderDTO:
@@ -108,8 +130,12 @@ definitions:
     type: object
   handlers.TrackDTO:
     properties:
+      album:
+        $ref: '#/definitions/handlers.AlbumSummaryDTO'
       album_id:
         type: integer
+      artist:
+        $ref: '#/definitions/handlers.ArtistSummaryDTO'
       artist_id:
         type: integer
       created_at:

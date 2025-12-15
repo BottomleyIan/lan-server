@@ -841,6 +841,9 @@
         "handlers.AlbumDTO": {
             "type": "object",
             "properties": {
+                "artist": {
+                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
+                },
                 "artist_id": {
                     "type": "integer"
                 },
@@ -864,6 +867,26 @@
                 }
             }
         },
+        "handlers.AlbumSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "artist": {
+                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
+                },
+                "artist_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.ArtistDTO": {
             "type": "object",
             "properties": {
@@ -880,6 +903,17 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ArtistSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -1003,8 +1037,14 @@
         "handlers.TrackDTO": {
             "type": "object",
             "properties": {
+                "album": {
+                    "$ref": "#/definitions/handlers.AlbumSummaryDTO"
+                },
                 "album_id": {
                     "type": "integer"
+                },
+                "artist": {
+                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
                 },
                 "artist_id": {
                     "type": "integer"

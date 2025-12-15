@@ -35,12 +35,12 @@ func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tracks, err := h.App.Queries.ListPlayableTracks(r.Context())
+	tracks, err := h.App.Queries.ListPlayableTracksWithJoins(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, tracksDTOFromDB(tracks))
+	writeJSON(w, tracksDTOFromPlayableRows(tracks))
 }
 
 // GetTrack godoc
@@ -63,7 +63,7 @@ func (h *Handlers) GetTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := h.App.Queries.GetTrackByID(r.Context(), id)
+	row, err := h.App.Queries.GetTrackWithJoins(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "track not found", http.StatusNotFound)
@@ -73,7 +73,7 @@ func (h *Handlers) GetTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, trackDTOFromDB(row))
+	writeJSON(w, trackDTOFromJoinedRow(row))
 }
 
 // UpdateTrack godoc
@@ -114,7 +114,7 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 		rating = dbtypes.NullInt64{Int64: *body.Rating, Valid: true}
 	}
 
-	row, err := h.App.Queries.UpdateTrackRating(r.Context(), db.UpdateTrackRatingParams{
+	_, err = h.App.Queries.UpdateTrackRating(r.Context(), db.UpdateTrackRatingParams{
 		Rating: rating,
 		ID:     id,
 	})
@@ -127,7 +127,13 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, trackDTOFromDB(row))
+	updated, err := h.App.Queries.GetTrackWithJoins(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, trackDTOFromJoinedRow(updated))
 }
 
 // StreamTrack godoc

@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"bottomley.ian/musicserver/internal/db"
 	"time"
+
+	"bottomley.ian/musicserver/internal/db"
 )
 
 func folderDTOFromDB(f db.Folder) FolderDTO {
@@ -59,12 +60,21 @@ func foldersDTOFromDB(rows []db.Folder) []FolderDTO {
 }
 
 func trackDTOFromDB(tk db.Track) TrackDTO {
+	return trackDTOFromParts(tk, db.Artist{}, db.Album{}, db.Artist{})
+}
 
+func trackDTOFromJoinedRow(row db.GetTrackWithJoinsRow) TrackDTO {
+	return trackDTOFromParts(row.Track, row.Artist, row.Album, row.Artist_2)
+}
+
+func trackDTOFromParts(tk db.Track, artist db.Artist, album db.Album, albumArtist db.Artist) TrackDTO {
 	return TrackDTO{
 		ID:           tk.ID,
 		FolderID:     tk.FolderID,
 		ArtistID:     int64PtrFromNullInt64(tk.ArtistID),
 		AlbumID:      int64PtrFromNullInt64(tk.AlbumID),
+		Artist:       artistSummaryFromArtist(artist),
+		Album:        albumSummaryFromAlbum(album, albumArtist),
 		RelPath:      tk.RelPath,
 		Filename:     tk.Filename,
 		Ext:          tk.Ext,
@@ -89,6 +99,14 @@ func tracksDTOFromDB(rows []db.Track) []TrackDTO {
 	return out
 }
 
+func tracksDTOFromPlayableRows(rows []db.ListPlayableTracksWithJoinsRow) []TrackDTO {
+	out := make([]TrackDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, trackDTOFromParts(row.Track, row.Artist, row.Album, row.Artist_2))
+	}
+	return out
+}
+
 func artistDTOFromDB(a db.Artist) ArtistDTO {
 	return ArtistDTO{
 		ID:        a.ID,
@@ -108,9 +126,14 @@ func artistsDTOFromDB(rows []db.Artist) []ArtistDTO {
 }
 
 func albumDTOFromDB(al db.Album) AlbumDTO {
+	return albumDTOFromParts(al, db.Artist{})
+}
+
+func albumDTOFromParts(al db.Album, artist db.Artist) AlbumDTO {
 	return AlbumDTO{
 		ID:        al.ID,
 		ArtistID:  al.ArtistID,
+		Artist:    artistSummaryFromArtist(artist),
 		Title:     al.Title,
 		ImagePath: stringPtrFromNullString(al.ImagePath),
 		DeletedAt: timePtrFromNullTime(al.DeletedAt),
@@ -123,6 +146,14 @@ func albumsDTOFromDB(rows []db.Album) []AlbumDTO {
 	out := make([]AlbumDTO, 0, len(rows))
 	for _, al := range rows {
 		out = append(out, albumDTOFromDB(al))
+	}
+	return out
+}
+
+func albumsDTOFromRows(rows []db.ListAlbumsWithArtistRow) []AlbumDTO {
+	out := make([]AlbumDTO, 0, len(rows))
+	for _, al := range rows {
+		out = append(out, albumDTOFromParts(al.Album, al.Artist))
 	}
 	return out
 }
@@ -146,33 +177,16 @@ func playlistsDTOFromDB(rows []db.Playlist) []PlaylistDTO {
 }
 
 func playlistTrackDTOFromRow(pt db.ListPlaylistTracksRow) PlaylistTrackDTO {
-	track := TrackDTO{
-		ID:           pt.TrackRowID,
-		FolderID:     pt.FolderID,
-		ArtistID:     int64PtrFromNullInt64(pt.ArtistID),
-		AlbumID:      int64PtrFromNullInt64(pt.AlbumID),
-		RelPath:      pt.RelPath,
-		Filename:     pt.Filename,
-		Ext:          pt.Ext,
-		Genre:        stringPtrFromNullString(pt.Genre),
-		Year:         int64PtrFromNullInt64(pt.Year),
-		Rating:       int64PtrFromNullInt64(pt.Rating),
-		SizeBytes:    pt.SizeBytes,
-		LastModified: pt.LastModified,
-		LastSeenAt:   pt.LastSeenAt,
-		DeletedAt:    timePtrFromNullTime(pt.TrackDeletedAt),
-		CreatedAt:    pt.TrackCreatedAt,
-		UpdatedAt:    pt.TrackUpdatedAt,
-	}
+	track := trackDTOFromParts(pt.Track, pt.Artist, pt.Album, pt.Artist_2)
 
 	return PlaylistTrackDTO{
-		ID:         pt.PlaylistTrackID,
-		PlaylistID: pt.PlaylistID,
-		TrackID:    pt.TrackID,
-		Position:   pt.Position,
-		DeletedAt:  timePtrFromNullTime(pt.PlaylistTrackDeletedAt),
-		CreatedAt:  pt.PlaylistTrackCreatedAt,
-		UpdatedAt:  pt.PlaylistTrackUpdatedAt,
+		ID:         pt.PlaylistTrack.ID,
+		PlaylistID: pt.PlaylistTrack.PlaylistID,
+		TrackID:    pt.PlaylistTrack.TrackID,
+		Position:   pt.PlaylistTrack.Position,
+		DeletedAt:  timePtrFromNullTime(pt.PlaylistTrack.DeletedAt),
+		CreatedAt:  pt.PlaylistTrack.CreatedAt,
+		UpdatedAt:  pt.PlaylistTrack.UpdatedAt,
 		Track:      &track,
 	}
 }
@@ -185,11 +199,10 @@ func playlistTracksDTOFromRows(rows []db.ListPlaylistTracksRow) []PlaylistTrackD
 	return out
 }
 
-func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *db.Track) PlaylistTrackDTO {
+func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *TrackDTO) PlaylistTrackDTO {
 	var trackDTO *TrackDTO
 	if track != nil {
-		td := trackDTOFromDB(*track)
-		trackDTO = &td
+		trackDTO = track
 	}
 	return PlaylistTrackDTO{
 		ID:         pt.ID,
@@ -200,5 +213,28 @@ func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *db.Track) PlaylistTrackD
 		CreatedAt:  pt.CreatedAt,
 		UpdatedAt:  pt.UpdatedAt,
 		Track:      trackDTO,
+	}
+}
+
+func artistSummaryFromArtist(ar db.Artist) *ArtistSummaryDTO {
+	if ar.ID == 0 {
+		return nil
+	}
+	return &ArtistSummaryDTO{
+		ID:   ar.ID,
+		Name: ar.Name,
+	}
+}
+
+func albumSummaryFromAlbum(al db.Album, artist db.Artist) *AlbumSummaryDTO {
+	if al.ID == 0 {
+		return nil
+	}
+	return &AlbumSummaryDTO{
+		ID:        al.ID,
+		ArtistID:  al.ArtistID,
+		Artist:    artistSummaryFromArtist(artist),
+		Title:     al.Title,
+		ImagePath: stringPtrFromNullString(al.ImagePath),
 	}
 }

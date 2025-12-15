@@ -90,6 +90,70 @@ func (q *Queries) GetTrackByID(ctx context.Context, id int64) (Track, error) {
 	return i, err
 }
 
+const getTrackWithJoins = `-- name: GetTrackWithJoins :one
+SELECT
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
+  al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
+  al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
+FROM tracks t
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.id = ?
+  AND t.deleted_at IS NULL
+`
+
+type GetTrackWithJoinsRow struct {
+	Track    Track
+	Artist   Artist
+	Album    Album
+	Artist_2 Artist
+}
+
+// Get a single track with artist/album info
+func (q *Queries) GetTrackWithJoins(ctx context.Context, id int64) (GetTrackWithJoinsRow, error) {
+	row := q.db.QueryRowContext(ctx, getTrackWithJoins, id)
+	var i GetTrackWithJoinsRow
+	err := row.Scan(
+		&i.Track.ID,
+		&i.Track.FolderID,
+		&i.Track.ArtistID,
+		&i.Track.AlbumID,
+		&i.Track.RelPath,
+		&i.Track.Filename,
+		&i.Track.Ext,
+		&i.Track.Genre,
+		&i.Track.Year,
+		&i.Track.Rating,
+		&i.Track.ImagePath,
+		&i.Track.SizeBytes,
+		&i.Track.LastModified,
+		&i.Track.LastSeenAt,
+		&i.Track.DeletedAt,
+		&i.Track.CreatedAt,
+		&i.Track.UpdatedAt,
+		&i.Artist.ID,
+		&i.Artist.Name,
+		&i.Artist.DeletedAt,
+		&i.Artist.CreatedAt,
+		&i.Artist.UpdatedAt,
+		&i.Album.ID,
+		&i.Album.ArtistID,
+		&i.Album.Title,
+		&i.Album.ImagePath,
+		&i.Album.DeletedAt,
+		&i.Album.CreatedAt,
+		&i.Album.UpdatedAt,
+		&i.Artist_2.ID,
+		&i.Artist_2.Name,
+		&i.Artist_2.DeletedAt,
+		&i.Artist_2.CreatedAt,
+		&i.Artist_2.UpdatedAt,
+	)
+	return i, err
+}
+
 const listAllIndexedTracks = `-- name: ListAllIndexedTracks :many
 SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t
@@ -127,6 +191,88 @@ func (q *Queries) ListAllIndexedTracks(ctx context.Context) ([]Track, error) {
 			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllIndexedTracksWithJoins = `-- name: ListAllIndexedTracksWithJoins :many
+SELECT
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
+  al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
+  al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+ORDER BY t.rel_path
+`
+
+type ListAllIndexedTracksWithJoinsRow struct {
+	Track    Track
+	Artist   Artist
+	Album    Album
+	Artist_2 Artist
+}
+
+// Include unavailable roots too (for admin/debug UI) with artist/album info
+func (q *Queries) ListAllIndexedTracksWithJoins(ctx context.Context) ([]ListAllIndexedTracksWithJoinsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllIndexedTracksWithJoins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllIndexedTracksWithJoinsRow
+	for rows.Next() {
+		var i ListAllIndexedTracksWithJoinsRow
+		if err := rows.Scan(
+			&i.Track.ID,
+			&i.Track.FolderID,
+			&i.Track.ArtistID,
+			&i.Track.AlbumID,
+			&i.Track.RelPath,
+			&i.Track.Filename,
+			&i.Track.Ext,
+			&i.Track.Genre,
+			&i.Track.Year,
+			&i.Track.Rating,
+			&i.Track.ImagePath,
+			&i.Track.SizeBytes,
+			&i.Track.LastModified,
+			&i.Track.LastSeenAt,
+			&i.Track.DeletedAt,
+			&i.Track.CreatedAt,
+			&i.Track.UpdatedAt,
+			&i.Artist.ID,
+			&i.Artist.Name,
+			&i.Artist.DeletedAt,
+			&i.Artist.CreatedAt,
+			&i.Artist.UpdatedAt,
+			&i.Album.ID,
+			&i.Album.ArtistID,
+			&i.Album.Title,
+			&i.Album.ImagePath,
+			&i.Album.DeletedAt,
+			&i.Album.CreatedAt,
+			&i.Album.UpdatedAt,
+			&i.Artist_2.ID,
+			&i.Artist_2.Name,
+			&i.Artist_2.DeletedAt,
+			&i.Artist_2.CreatedAt,
+			&i.Artist_2.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -179,6 +325,89 @@ func (q *Queries) ListPlayableTracks(ctx context.Context) ([]Track, error) {
 			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPlayableTracksWithJoins = `-- name: ListPlayableTracksWithJoins :many
+SELECT
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
+  al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
+  al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND f.available = 1
+ORDER BY t.rel_path
+`
+
+type ListPlayableTracksWithJoinsRow struct {
+	Track    Track
+	Artist   Artist
+	Album    Album
+	Artist_2 Artist
+}
+
+// Default: list all playable tracks with artist/album info (roots currently available)
+func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context) ([]ListPlayableTracksWithJoinsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksWithJoins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayableTracksWithJoinsRow
+	for rows.Next() {
+		var i ListPlayableTracksWithJoinsRow
+		if err := rows.Scan(
+			&i.Track.ID,
+			&i.Track.FolderID,
+			&i.Track.ArtistID,
+			&i.Track.AlbumID,
+			&i.Track.RelPath,
+			&i.Track.Filename,
+			&i.Track.Ext,
+			&i.Track.Genre,
+			&i.Track.Year,
+			&i.Track.Rating,
+			&i.Track.ImagePath,
+			&i.Track.SizeBytes,
+			&i.Track.LastModified,
+			&i.Track.LastSeenAt,
+			&i.Track.DeletedAt,
+			&i.Track.CreatedAt,
+			&i.Track.UpdatedAt,
+			&i.Artist.ID,
+			&i.Artist.Name,
+			&i.Artist.DeletedAt,
+			&i.Artist.CreatedAt,
+			&i.Artist.UpdatedAt,
+			&i.Album.ID,
+			&i.Album.ArtistID,
+			&i.Album.Title,
+			&i.Album.ImagePath,
+			&i.Album.DeletedAt,
+			&i.Album.CreatedAt,
+			&i.Album.UpdatedAt,
+			&i.Artist_2.ID,
+			&i.Artist_2.Name,
+			&i.Artist_2.DeletedAt,
+			&i.Artist_2.CreatedAt,
+			&i.Artist_2.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

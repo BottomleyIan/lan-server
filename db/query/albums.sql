@@ -5,6 +5,16 @@ FROM albums
 WHERE id = ?
   AND deleted_at IS NULL;
 
+-- Get a single album by ID with artist info
+-- name: GetAlbumWithArtist :one
+SELECT
+  sqlc.embed(a),
+  sqlc.embed(ar)
+FROM albums a
+LEFT JOIN artists ar ON ar.id = a.artist_id
+WHERE a.id = ?
+  AND a.deleted_at IS NULL;
+
 -- Update album image path (only if currently NULL)
 -- name: UpdateAlbumImagePath :one
 UPDATE albums
@@ -29,6 +39,16 @@ SELECT *
 FROM albums
 WHERE deleted_at IS NULL
 ORDER BY title;
+
+-- List albums with artist info
+-- name: ListAlbumsWithArtist :many
+SELECT
+  sqlc.embed(a),
+  sqlc.embed(ar)
+FROM albums a
+LEFT JOIN artists ar ON ar.id = a.artist_id
+WHERE a.deleted_at IS NULL
+ORDER BY a.title;
 
 -- Update album title/artist
 -- name: UpdateAlbum :one

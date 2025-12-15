@@ -29,12 +29,12 @@ func (h *Handlers) ListAlbums(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.App.Queries.ListAlbums(r.Context())
+	rows, err := h.App.Queries.ListAlbumsWithArtist(r.Context())
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, albumsDTOFromDB(rows))
+	writeJSON(w, albumsDTOFromRows(rows))
 }
 
 // GetAlbum godoc
@@ -57,7 +57,7 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	album, err := h.App.Queries.GetAlbumByID(r.Context(), id)
+	album, err := h.App.Queries.GetAlbumWithArtist(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "album not found", http.StatusNotFound)
@@ -67,7 +67,7 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, albumDTOFromDB(album))
+	writeJSON(w, albumDTOFromParts(album.Album, album.Artist))
 }
 
 // UpdateAlbum godoc
@@ -102,7 +102,7 @@ func (h *Handlers) UpdateAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := h.App.Queries.UpdateAlbum(r.Context(), db.UpdateAlbumParams{
+	_, err = h.App.Queries.UpdateAlbum(r.Context(), db.UpdateAlbumParams{
 		ArtistID: body.ArtistID,
 		Title:    body.Title,
 		ID:       id,
@@ -116,7 +116,13 @@ func (h *Handlers) UpdateAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, albumDTOFromDB(row))
+	updated, err := h.App.Queries.GetAlbumWithArtist(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, albumDTOFromParts(updated.Album, updated.Artist))
 }
 
 // DeleteAlbum godoc

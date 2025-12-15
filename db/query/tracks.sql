@@ -29,6 +29,20 @@ FROM tracks
 WHERE id = ?
   AND deleted_at IS NULL;
 
+-- Get a single track with artist/album info
+-- name: GetTrackWithJoins :one
+SELECT
+  sqlc.embed(t),
+  sqlc.embed(ar),
+  sqlc.embed(al),
+  sqlc.embed(al_ar)
+FROM tracks t
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.id = ?
+  AND t.deleted_at IS NULL;
+
 -- Mark tracks missing if not seen during this scan pass.
 -- Pass scan_start_time from StartFolderScan (folders.last_scan_at returned value).
 -- name: MarkMissingTracksForFolder :exec
@@ -53,6 +67,39 @@ ORDER BY t.rel_path;
 SELECT t.*
 FROM tracks t
 JOIN folders f ON f.id = t.folder_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+ORDER BY t.rel_path;
+
+-- Default: list all playable tracks with artist/album info (roots currently available)
+-- name: ListPlayableTracksWithJoins :many
+SELECT
+  sqlc.embed(t),
+  sqlc.embed(ar),
+  sqlc.embed(al),
+  sqlc.embed(al_ar)
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND f.available = 1
+ORDER BY t.rel_path;
+
+-- Include unavailable roots too (for admin/debug UI) with artist/album info
+-- name: ListAllIndexedTracksWithJoins :many
+SELECT
+  sqlc.embed(t),
+  sqlc.embed(ar),
+  sqlc.embed(al),
+  sqlc.embed(al_ar)
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
 ORDER BY t.rel_path;

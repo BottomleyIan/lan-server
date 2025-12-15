@@ -87,7 +87,7 @@ func (h *Handlers) AddPlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "playlist not found", http.StatusNotFound)
 		return
 	}
-	trackRow, err := h.App.Queries.GetTrackByID(r.Context(), body.TrackID)
+	trackRow, err := h.App.Queries.GetTrackWithJoins(r.Context(), body.TrackID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "track not found", http.StatusNotFound)
@@ -117,7 +117,8 @@ func (h *Handlers) AddPlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, playlistTrackDTOFromPT(row, &trackRow))
+	trackDTO := trackDTOFromJoinedRow(trackRow)
+	writeJSON(w, playlistTrackDTOFromPT(row, &trackDTO))
 }
 
 // UpdatePlaylistTrack godoc
@@ -169,7 +170,7 @@ func (h *Handlers) UpdatePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trackRow, err := h.App.Queries.GetTrackByID(r.Context(), row.TrackID)
+	trackRow, err := h.App.Queries.GetTrackWithJoins(r.Context(), row.TrackID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// track missing but playlist track exists; return without track details
@@ -180,7 +181,8 @@ func (h *Handlers) UpdatePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, playlistTrackDTOFromPT(row, &trackRow))
+	trackDTO := trackDTOFromJoinedRow(trackRow)
+	writeJSON(w, playlistTrackDTOFromPT(row, &trackDTO))
 }
 
 func parseIDParam(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {

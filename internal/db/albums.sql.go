@@ -34,6 +34,42 @@ func (q *Queries) GetAlbumByID(ctx context.Context, id int64) (Album, error) {
 	return i, err
 }
 
+const getAlbumWithArtist = `-- name: GetAlbumWithArtist :one
+SELECT
+  a.id, a.artist_id, a.title, a.image_path, a.deleted_at, a.created_at, a.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at
+FROM albums a
+LEFT JOIN artists ar ON ar.id = a.artist_id
+WHERE a.id = ?
+  AND a.deleted_at IS NULL
+`
+
+type GetAlbumWithArtistRow struct {
+	Album  Album
+	Artist Artist
+}
+
+// Get a single album by ID with artist info
+func (q *Queries) GetAlbumWithArtist(ctx context.Context, id int64) (GetAlbumWithArtistRow, error) {
+	row := q.db.QueryRowContext(ctx, getAlbumWithArtist, id)
+	var i GetAlbumWithArtistRow
+	err := row.Scan(
+		&i.Album.ID,
+		&i.Album.ArtistID,
+		&i.Album.Title,
+		&i.Album.ImagePath,
+		&i.Album.DeletedAt,
+		&i.Album.CreatedAt,
+		&i.Album.UpdatedAt,
+		&i.Artist.ID,
+		&i.Artist.Name,
+		&i.Artist.DeletedAt,
+		&i.Artist.CreatedAt,
+		&i.Artist.UpdatedAt,
+	)
+	return i, err
+}
+
 const listAlbums = `-- name: ListAlbums :many
 SELECT id, artist_id, title, image_path, deleted_at, created_at, updated_at
 FROM albums
@@ -59,6 +95,58 @@ func (q *Queries) ListAlbums(ctx context.Context) ([]Album, error) {
 			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAlbumsWithArtist = `-- name: ListAlbumsWithArtist :many
+SELECT
+  a.id, a.artist_id, a.title, a.image_path, a.deleted_at, a.created_at, a.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at
+FROM albums a
+LEFT JOIN artists ar ON ar.id = a.artist_id
+WHERE a.deleted_at IS NULL
+ORDER BY a.title
+`
+
+type ListAlbumsWithArtistRow struct {
+	Album  Album
+	Artist Artist
+}
+
+// List albums with artist info
+func (q *Queries) ListAlbumsWithArtist(ctx context.Context) ([]ListAlbumsWithArtistRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAlbumsWithArtist)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAlbumsWithArtistRow
+	for rows.Next() {
+		var i ListAlbumsWithArtistRow
+		if err := rows.Scan(
+			&i.Album.ID,
+			&i.Album.ArtistID,
+			&i.Album.Title,
+			&i.Album.ImagePath,
+			&i.Album.DeletedAt,
+			&i.Album.CreatedAt,
+			&i.Album.UpdatedAt,
+			&i.Artist.ID,
+			&i.Artist.Name,
+			&i.Artist.DeletedAt,
+			&i.Artist.CreatedAt,
+			&i.Artist.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -17,33 +17,16 @@ RETURNING *;
 -- List playlist tracks with track metadata
 -- name: ListPlaylistTracks :many
 SELECT
-  pt.id AS playlist_track_id,
-  pt.playlist_id,
-  pt.track_id,
-  pt.position,
-  pt.deleted_at AS playlist_track_deleted_at,
-  pt.created_at AS playlist_track_created_at,
-  pt.updated_at AS playlist_track_updated_at,
-
-  t.id AS track_row_id,
-  t.folder_id,
-  t.artist_id,
-  t.album_id,
-  t.rel_path,
-  t.filename,
-  t.ext,
-  t.genre,
-  t.year,
-  t.rating,
-  t.image_path,
-  t.size_bytes,
-  t.last_modified,
-  t.last_seen_at,
-  t.deleted_at AS track_deleted_at,
-  t.created_at AS track_created_at,
-  t.updated_at AS track_updated_at
+  sqlc.embed(pt),
+  sqlc.embed(t),
+  sqlc.embed(ar),
+  sqlc.embed(al),
+  sqlc.embed(al_ar)
 FROM playlist_tracks pt
 JOIN tracks t ON t.id = pt.track_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE pt.playlist_id = ?
   AND pt.deleted_at IS NULL
   AND t.deleted_at IS NULL

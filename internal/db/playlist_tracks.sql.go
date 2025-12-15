@@ -7,9 +7,6 @@ package db
 
 import (
 	"context"
-	"time"
-
-	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
 const addPlaylistTrack = `-- name: AddPlaylistTrack :one
@@ -45,33 +42,16 @@ func (q *Queries) AddPlaylistTrack(ctx context.Context, arg AddPlaylistTrackPara
 
 const listPlaylistTracks = `-- name: ListPlaylistTracks :many
 SELECT
-  pt.id AS playlist_track_id,
-  pt.playlist_id,
-  pt.track_id,
-  pt.position,
-  pt.deleted_at AS playlist_track_deleted_at,
-  pt.created_at AS playlist_track_created_at,
-  pt.updated_at AS playlist_track_updated_at,
-
-  t.id AS track_row_id,
-  t.folder_id,
-  t.artist_id,
-  t.album_id,
-  t.rel_path,
-  t.filename,
-  t.ext,
-  t.genre,
-  t.year,
-  t.rating,
-  t.image_path,
-  t.size_bytes,
-  t.last_modified,
-  t.last_seen_at,
-  t.deleted_at AS track_deleted_at,
-  t.created_at AS track_created_at,
-  t.updated_at AS track_updated_at
+  pt.id, pt.playlist_id, pt.track_id, pt.position, pt.deleted_at, pt.created_at, pt.updated_at,
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
+  al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
+  al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
 FROM playlist_tracks pt
 JOIN tracks t ON t.id = pt.track_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE pt.playlist_id = ?
   AND pt.deleted_at IS NULL
   AND t.deleted_at IS NULL
@@ -79,30 +59,11 @@ ORDER BY pt.position
 `
 
 type ListPlaylistTracksRow struct {
-	PlaylistTrackID        int64
-	PlaylistID             int64
-	TrackID                int64
-	Position               int64
-	PlaylistTrackDeletedAt dbtypes.NullTime
-	PlaylistTrackCreatedAt time.Time
-	PlaylistTrackUpdatedAt time.Time
-	TrackRowID             int64
-	FolderID               int64
-	ArtistID               dbtypes.NullInt64
-	AlbumID                dbtypes.NullInt64
-	RelPath                string
-	Filename               string
-	Ext                    string
-	Genre                  dbtypes.NullString
-	Year                   dbtypes.NullInt64
-	Rating                 dbtypes.NullInt64
-	ImagePath              dbtypes.NullString
-	SizeBytes              int64
-	LastModified           int64
-	LastSeenAt             time.Time
-	TrackDeletedAt         dbtypes.NullTime
-	TrackCreatedAt         time.Time
-	TrackUpdatedAt         time.Time
+	PlaylistTrack PlaylistTrack
+	Track         Track
+	Artist        Artist
+	Album         Album
+	Artist_2      Artist
 }
 
 // List playlist tracks with track metadata
@@ -116,30 +77,47 @@ func (q *Queries) ListPlaylistTracks(ctx context.Context, playlistID int64) ([]L
 	for rows.Next() {
 		var i ListPlaylistTracksRow
 		if err := rows.Scan(
-			&i.PlaylistTrackID,
-			&i.PlaylistID,
-			&i.TrackID,
-			&i.Position,
-			&i.PlaylistTrackDeletedAt,
-			&i.PlaylistTrackCreatedAt,
-			&i.PlaylistTrackUpdatedAt,
-			&i.TrackRowID,
-			&i.FolderID,
-			&i.ArtistID,
-			&i.AlbumID,
-			&i.RelPath,
-			&i.Filename,
-			&i.Ext,
-			&i.Genre,
-			&i.Year,
-			&i.Rating,
-			&i.ImagePath,
-			&i.SizeBytes,
-			&i.LastModified,
-			&i.LastSeenAt,
-			&i.TrackDeletedAt,
-			&i.TrackCreatedAt,
-			&i.TrackUpdatedAt,
+			&i.PlaylistTrack.ID,
+			&i.PlaylistTrack.PlaylistID,
+			&i.PlaylistTrack.TrackID,
+			&i.PlaylistTrack.Position,
+			&i.PlaylistTrack.DeletedAt,
+			&i.PlaylistTrack.CreatedAt,
+			&i.PlaylistTrack.UpdatedAt,
+			&i.Track.ID,
+			&i.Track.FolderID,
+			&i.Track.ArtistID,
+			&i.Track.AlbumID,
+			&i.Track.RelPath,
+			&i.Track.Filename,
+			&i.Track.Ext,
+			&i.Track.Genre,
+			&i.Track.Year,
+			&i.Track.Rating,
+			&i.Track.ImagePath,
+			&i.Track.SizeBytes,
+			&i.Track.LastModified,
+			&i.Track.LastSeenAt,
+			&i.Track.DeletedAt,
+			&i.Track.CreatedAt,
+			&i.Track.UpdatedAt,
+			&i.Artist.ID,
+			&i.Artist.Name,
+			&i.Artist.DeletedAt,
+			&i.Artist.CreatedAt,
+			&i.Artist.UpdatedAt,
+			&i.Album.ID,
+			&i.Album.ArtistID,
+			&i.Album.Title,
+			&i.Album.ImagePath,
+			&i.Album.DeletedAt,
+			&i.Album.CreatedAt,
+			&i.Album.UpdatedAt,
+			&i.Artist_2.ID,
+			&i.Artist_2.Name,
+			&i.Artist_2.DeletedAt,
+			&i.Artist_2.CreatedAt,
+			&i.Artist_2.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -847,6 +847,9 @@ const docTemplate = `{
         "handlers.AlbumDTO": {
             "type": "object",
             "properties": {
+                "artist": {
+                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
+                },
                 "artist_id": {
                     "type": "integer"
                 },
@@ -870,6 +873,26 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.AlbumSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "artist": {
+                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
+                },
+                "artist_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.ArtistDTO": {
             "type": "object",
             "properties": {
@@ -886,6 +909,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ArtistSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -1009,8 +1043,14 @@ const docTemplate = `{
         "handlers.TrackDTO": {
             "type": "object",
             "properties": {
+                "album": {
+                    "$ref": "#/definitions/handlers.AlbumSummaryDTO"
+                },
                 "album_id": {
                     "type": "integer"
+                },
+                "artist": {
+                    "$ref": "#/definitions/handlers.ArtistSummaryDTO"
                 },
                 "artist_id": {
                     "type": "integer"

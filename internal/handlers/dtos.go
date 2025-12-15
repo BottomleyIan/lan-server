@@ -16,23 +16,25 @@ type FolderDTO struct {
 }
 
 type TrackDTO struct {
-	ID           int64      `json:"id"`
-	FolderID     int64      `json:"folder_id"`
-	ArtistID     *int64     `json:"artist_id,omitempty"`
-	AlbumID      *int64     `json:"album_id,omitempty"`
-	RelPath      string     `json:"rel_path"`
-	Filename     string     `json:"filename"`
-	Ext          string     `json:"ext"`
-	Genre        *string    `json:"genre,omitempty"`
-	Year         *int64     `json:"year,omitempty"`
-	Rating       *int64     `json:"rating,omitempty"`
-	ImagePath    *string    `json:"image_path,omitempty"`
-	SizeBytes    int64      `json:"size_bytes"`
-	LastModified int64      `json:"last_modified"`
-	LastSeenAt   time.Time  `json:"last_seen_at"`
-	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID           int64             `json:"id"`
+	FolderID     int64             `json:"folder_id"`
+	ArtistID     *int64            `json:"artist_id,omitempty"`
+	AlbumID      *int64            `json:"album_id,omitempty"`
+	Artist       *ArtistSummaryDTO `json:"artist,omitempty"`
+	Album        *AlbumSummaryDTO  `json:"album,omitempty"`
+	RelPath      string            `json:"rel_path"`
+	Filename     string            `json:"filename"`
+	Ext          string            `json:"ext"`
+	Genre        *string           `json:"genre,omitempty"`
+	Year         *int64            `json:"year,omitempty"`
+	Rating       *int64            `json:"rating,omitempty"`
+	ImagePath    *string           `json:"image_path,omitempty"`
+	SizeBytes    int64             `json:"size_bytes"`
+	LastModified int64             `json:"last_modified"`
+	LastSeenAt   time.Time         `json:"last_seen_at"`
+	DeletedAt    *time.Time        `json:"deleted_at,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
 }
 
 type ScanDTO struct {
@@ -52,13 +54,27 @@ type ArtistDTO struct {
 }
 
 type AlbumDTO struct {
-	ID        int64      `json:"id"`
-	ArtistID  int64      `json:"artist_id"`
-	Title     string     `json:"title"`
-	ImagePath *string    `json:"image_path,omitempty"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID        int64             `json:"id"`
+	ArtistID  int64             `json:"artist_id"`
+	Artist    *ArtistSummaryDTO `json:"artist,omitempty"`
+	Title     string            `json:"title"`
+	ImagePath *string           `json:"image_path,omitempty"`
+	DeletedAt *time.Time        `json:"deleted_at,omitempty"`
+	CreatedAt time.Time         `json:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at"`
+}
+
+type ArtistSummaryDTO struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+type AlbumSummaryDTO struct {
+	ID        int64             `json:"id"`
+	ArtistID  int64             `json:"artist_id"`
+	Artist    *ArtistSummaryDTO `json:"artist,omitempty"`
+	Title     string            `json:"title"`
+	ImagePath *string           `json:"image_path,omitempty"`
 }
 
 type PlaylistDTO struct {
