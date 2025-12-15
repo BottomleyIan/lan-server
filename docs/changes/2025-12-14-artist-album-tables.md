@@ -16,6 +16,8 @@
 - Added low-priority TODO to serve curl-friendly terminal responses when detecting curl User-Agent.
 - Added playlists support: new migration/tables (`playlists`, `playlist_tracks`), sqlc queries, DTO/mappers, routes for list/get/post/put, playlist-track management (list/add/update position), and Swagger regeneration. Delete existing SQLite DB before restart to apply create-only migrations.
 - Added cover image plumbing: `image_path` columns for tracks/albums (moved into base migration), sqlc overrides/models/DTOs, and scanner now saves embedded cover art to `tmp/covers/{album_id}/{track_id}.*` and sets track/album image paths. Delete SQLite to pick up the migration.
+- Scanner now uses the FS abstraction (no direct `os` usage) and only sets album images from folder art when an album lacks an image; track-embedded art updates track image only.
+- TODO updated with new high-priority image endpoints (track/album with fallbacks).
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

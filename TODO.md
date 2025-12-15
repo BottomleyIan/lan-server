@@ -2,6 +2,7 @@
 
 ## High
 - [ ] Fix picture handling in metadata: extract/normalize covers, save thumbnails, and store references from tracks to cached images (or decide final storage approach).
+- [ ] Add image endpoints for tracks/albums: serve track image (fallback to album image) and album image (fallback to first track image).
 
 ## Medium
 

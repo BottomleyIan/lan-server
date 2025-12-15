@@ -2,9 +2,10 @@ package scanner
 
 import (
 	//"errors"
-	"os"
 	//"path/filepath"
 	//"strings"
+	"fmt"
+	"io"
 
 	"github.com/dhowden/tag"
 	//"github.com/mewkiz/flac"
@@ -33,13 +34,18 @@ func (s *Scanner) ReadMetadata(path string) (Metadata, error) {
 	var out Metadata
 
 	// 1) Generic tag reader for common fields
-	f, err := os.Open(path)
+	file, err := s.FS.Open(path)
 	if err != nil {
 		return out, err
 	}
-	defer f.Close()
+	defer file.Close()
 
-	m, err := tag.ReadFrom(f)
+	rc, ok := file.(io.ReadSeeker)
+	if !ok {
+		return out, fmt.Errorf("file does not implement io.ReadSeeker")
+	}
+
+	m, err := tag.ReadFrom(rc)
 	if err == nil {
 		out.Title = m.Title()
 		out.Artist = m.Artist()
