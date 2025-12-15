@@ -15,6 +15,7 @@ type FS interface {
 	MkdirAll(path string, perm fs.FileMode) error
 	Create(name string) (io.WriteCloser, error)
 	WriteFile(name string, data []byte, perm fs.FileMode) error
+	ReadFile(name string) ([]byte, error)
 }
 
 type OSFS struct{}
@@ -45,4 +46,8 @@ func (OSFS) Create(name string) (io.WriteCloser, error) {
 
 func (OSFS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	return os.WriteFile(name, data, perm)
+}
+
+func (OSFS) ReadFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
 }

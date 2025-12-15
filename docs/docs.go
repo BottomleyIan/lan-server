@@ -124,6 +124,33 @@ const docTemplate = `{
                 }
             }
         },
+        "/albums/{id}/image": {
+            "get": {
+                "produces": [
+                    "image/jpeg",
+                    "image/png",
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Get album image",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Album ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/artists": {
             "get": {
                 "produces": [
@@ -756,6 +783,33 @@ const docTemplate = `{
                         "schema": {
                             "type": "file"
                         }
+                    }
+                }
+            }
+        },
+        "/tracks/{id}/image": {
+            "get": {
+                "produces": [
+                    "image/jpeg",
+                    "image/png",
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Get track image",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Track ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }

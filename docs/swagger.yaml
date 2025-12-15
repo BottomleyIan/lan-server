@@ -260,6 +260,24 @@ paths:
       summary: Update album
       tags:
       - albums
+  /albums/{id}/image:
+    get:
+      parameters:
+      - description: Album ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/jpeg
+      - image/png
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+      summary: Get album image
+      tags:
+      - images
   /artists:
     get:
       produces:
@@ -675,6 +693,24 @@ paths:
       summary: Download a track
       tags:
       - tracks
+  /tracks/{id}/image:
+    get:
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/jpeg
+      - image/png
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+      summary: Get track image
+      tags:
+      - images
   /tracks/{id}/play:
     get:
       parameters:

@@ -12,6 +12,24 @@ import (
 	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
+const getFirstTrackImageForAlbum = `-- name: GetFirstTrackImageForAlbum :one
+SELECT image_path
+FROM tracks
+WHERE album_id = ?
+  AND deleted_at IS NULL
+  AND image_path IS NOT NULL
+ORDER BY id
+LIMIT 1
+`
+
+// First available track image for an album
+func (q *Queries) GetFirstTrackImageForAlbum(ctx context.Context, albumID dbtypes.NullInt64) (dbtypes.NullString, error) {
+	row := q.db.QueryRowContext(ctx, getFirstTrackImageForAlbum, albumID)
+	var image_path dbtypes.NullString
+	err := row.Scan(&image_path)
+	return image_path, err
+}
+
 const getPlayableTrackPathPartsByID = `-- name: GetPlayableTrackPathPartsByID :one
 SELECT
   t.id,

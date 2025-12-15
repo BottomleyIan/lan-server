@@ -56,8 +56,9 @@ func main() {
 	a := &app.App{
 		DB:      sqlite,
 		Queries: db.New(sqlite),
+		FS:      fs.OSFS{},
 	}
-	s := scanner.New(a.Queries, fs.OSFS{})
+	s := scanner.New(a.Queries, a.FS)
 	h := handlers.New(a, s)
 	r := chi.NewRouter()
 
@@ -87,6 +88,7 @@ func main() {
 			r.Put("/{id}", h.UpdateTrack)
 			r.Get("/{id}/play", h.StreamTrack)
 			r.Get("/{id}/download", h.DownloadTrack)
+			r.Get("/{id}/image", h.GetTrackImage)
 		})
 		r.Route("/artists", func(r chi.Router) {
 			r.Get("/", h.ListArtists)
@@ -99,6 +101,7 @@ func main() {
 			r.Get("/{id}", h.GetAlbum)
 			r.Put("/{id}", h.UpdateAlbum)
 			r.Delete("/{id}", h.DeleteAlbum)
+			r.Get("/{id}/image", h.GetAlbumImage)
 		})
 		r.Route("/playlists", func(r chi.Router) {
 			r.Get("/", h.ListPlaylists)

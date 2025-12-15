@@ -134,4 +134,4 @@ docs/changes/YYYY-MM-DD-short-description.md
 * Use `context.Context` as the first arg to any function that does I/O or DB calls
 * Prefer explicit errors and typed sentinel errors for mapping to HTTP responses
 * Keep handler logic thin; keep scan logic in scanner service
-
+* Use the `bd` tool (Beads CLI) for all new non-Markdown work and for issue tracking; see `.beads/README.md` for common commands

@@ -18,6 +18,7 @@
 - Added cover image plumbing: `image_path` columns for tracks/albums (moved into base migration), sqlc overrides/models/DTOs, and scanner now saves embedded cover art to `tmp/covers/{album_id}/{track_id}.*` and sets track/album image paths. Delete SQLite to pick up the migration.
 - Scanner now uses the FS abstraction (no direct `os` usage) and only sets album images from folder art when an album lacks an image; track-embedded art updates track image only.
 - TODO updated with new high-priority image endpoints (track/album with fallbacks).
+- Added image-serving endpoints for tracks and albums with fallback logic (track → album image, album → first track image) plus Swagger regeneration.
 
 ## Why it changed
 - Normalize artist/album data to avoid duplication and support metadata-aware queries; capture genre/year tags alongside tracks.

@@ -93,3 +93,13 @@ SET image_path = ?
 WHERE id = ?
   AND deleted_at IS NULL
 RETURNING *;
+
+-- First available track image for an album
+-- name: GetFirstTrackImageForAlbum :one
+SELECT image_path
+FROM tracks
+WHERE album_id = ?
+  AND deleted_at IS NULL
+  AND image_path IS NOT NULL
+ORDER BY id
+LIMIT 1;
