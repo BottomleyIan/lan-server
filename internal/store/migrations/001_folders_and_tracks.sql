@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS albums (
   id INTEGER PRIMARY KEY,
   artist_id INTEGER NOT NULL,
   title TEXT NOT NULL,
+  image_path TEXT NULL,
 
   deleted_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP),
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   genre TEXT NULL,
   year INTEGER NULL,
   rating INTEGER NULL CHECK (rating BETWEEN 1 AND 5),
+  image_path TEXT NULL,
 
   size_bytes INTEGER NOT NULL,
   last_modified INTEGER NOT NULL,   -- unix seconds since epoch

@@ -2,8 +2,10 @@ package scanner
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -131,13 +133,63 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 		}
 
 		_, err = s.Q.UpdateTrackMetadata(ctx, db.UpdateTrackMetadataParams{
-			ArtistID: artistID,
-			AlbumID:  albumID,
-			Genre:    genre,
-			Year:     year,
-			ID:       track.ID,
+			ArtistID:  artistID,
+			AlbumID:   albumID,
+			Genre:     genre,
+			Year:      year,
+			ImagePath: dbtypes.NullString{},
+			ID:        track.ID,
 		})
+		if err != nil {
+			return err
+		}
+
+		if metadata.Picture != nil && albumID.Valid {
+			savedPath, err := saveTrackImage(metadata.Picture, albumID.Int64, track.ID)
+			if err != nil {
+				log.Printf("warn: failed to save image for track %d: %v", track.ID, err)
+			} else {
+				_, err := s.Q.UpdateTrackImagePath(ctx, db.UpdateTrackImagePathParams{
+					ImagePath: dbtypes.NullString{String: savedPath, Valid: true},
+					ID:        track.ID,
+				})
+				if err != nil {
+					log.Printf("warn: failed to set track image path %d: %v", track.ID, err)
+				}
+				_, err = s.Q.UpdateAlbumImagePath(ctx, db.UpdateAlbumImagePathParams{
+					ImagePath: dbtypes.NullString{String: savedPath, Valid: true},
+					ID:        albumID.Int64,
+				})
+				if err != nil {
+					log.Printf("warn: failed to set album image path %d: %v", albumID.Int64, err)
+				}
+			}
+		}
 
 		return err
 	})
+}
+
+func saveTrackImage(pic *Picture, albumID, trackID int64) (string, error) {
+	if pic == nil || len(pic.Data) == 0 {
+		return "", fmt.Errorf("empty picture")
+	}
+	base := filepath.Join("tmp", "covers", fmt.Sprintf("%d", albumID))
+	if err := os.MkdirAll(base, 0o755); err != nil {
+		return "", err
+	}
+	ext := ".img"
+	switch strings.ToLower(pic.MIME) {
+	case "image/jpeg", "image/jpg":
+		ext = ".jpg"
+	case "image/png":
+		ext = ".png"
+	}
+	filename := fmt.Sprintf("%d%s", trackID, ext)
+	fullPath := filepath.Join(base, filename)
+	if err := os.WriteFile(fullPath, pic.Data, 0o644); err != nil {
+		return "", err
+	}
+	rel := filepath.ToSlash(filepath.Join(fmt.Sprintf("%d", albumID), filename))
+	return rel, nil
 }

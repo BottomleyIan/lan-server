@@ -7,10 +7,12 @@ package db
 
 import (
 	"context"
+
+	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
 const getAlbumByID = `-- name: GetAlbumByID :one
-SELECT id, artist_id, title, deleted_at, created_at, updated_at
+SELECT id, artist_id, title, image_path, deleted_at, created_at, updated_at
 FROM albums
 WHERE id = ?
   AND deleted_at IS NULL
@@ -24,6 +26,7 @@ func (q *Queries) GetAlbumByID(ctx context.Context, id int64) (Album, error) {
 		&i.ID,
 		&i.ArtistID,
 		&i.Title,
+		&i.ImagePath,
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -32,7 +35,7 @@ func (q *Queries) GetAlbumByID(ctx context.Context, id int64) (Album, error) {
 }
 
 const listAlbums = `-- name: ListAlbums :many
-SELECT id, artist_id, title, deleted_at, created_at, updated_at
+SELECT id, artist_id, title, image_path, deleted_at, created_at, updated_at
 FROM albums
 WHERE deleted_at IS NULL
 ORDER BY title
@@ -52,6 +55,7 @@ func (q *Queries) ListAlbums(ctx context.Context) ([]Album, error) {
 			&i.ID,
 			&i.ArtistID,
 			&i.Title,
+			&i.ImagePath,
 			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -74,7 +78,7 @@ UPDATE albums
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = ?
   AND deleted_at IS NULL
-RETURNING id, artist_id, title, deleted_at, created_at, updated_at
+RETURNING id, artist_id, title, image_path, deleted_at, created_at, updated_at
 `
 
 // Soft delete album
@@ -85,6 +89,7 @@ func (q *Queries) SoftDeleteAlbum(ctx context.Context, id int64) (Album, error) 
 		&i.ID,
 		&i.ArtistID,
 		&i.Title,
+		&i.ImagePath,
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -97,7 +102,7 @@ UPDATE albums
 SET artist_id = ?, title = ?
 WHERE id = ?
   AND deleted_at IS NULL
-RETURNING id, artist_id, title, deleted_at, created_at, updated_at
+RETURNING id, artist_id, title, image_path, deleted_at, created_at, updated_at
 `
 
 type UpdateAlbumParams struct {
@@ -114,6 +119,36 @@ func (q *Queries) UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) (Album
 		&i.ID,
 		&i.ArtistID,
 		&i.Title,
+		&i.ImagePath,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateAlbumImagePath = `-- name: UpdateAlbumImagePath :one
+UPDATE albums
+SET image_path = COALESCE(?, image_path)
+WHERE id = ?
+  AND deleted_at IS NULL
+RETURNING id, artist_id, title, image_path, deleted_at, created_at, updated_at
+`
+
+type UpdateAlbumImagePathParams struct {
+	ImagePath dbtypes.NullString
+	ID        int64
+}
+
+// Update album image path (only if currently NULL)
+func (q *Queries) UpdateAlbumImagePath(ctx context.Context, arg UpdateAlbumImagePathParams) (Album, error) {
+	row := q.db.QueryRowContext(ctx, updateAlbumImagePath, arg.ImagePath, arg.ID)
+	var i Album
+	err := row.Scan(
+		&i.ID,
+		&i.ArtistID,
+		&i.Title,
+		&i.ImagePath,
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -128,7 +163,7 @@ ON CONFLICT(artist_id, title) DO UPDATE SET
   artist_id = excluded.artist_id,
   title = excluded.title,
   deleted_at = NULL
-RETURNING id, artist_id, title, deleted_at, created_at, updated_at
+RETURNING id, artist_id, title, image_path, deleted_at, created_at, updated_at
 `
 
 type UpsertAlbumParams struct {
@@ -144,6 +179,7 @@ func (q *Queries) UpsertAlbum(ctx context.Context, arg UpsertAlbumParams) (Album
 		&i.ID,
 		&i.ArtistID,
 		&i.Title,
+		&i.ImagePath,
 		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,

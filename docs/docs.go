@@ -805,6 +805,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "image_path": {
+                    "type": "string"
+                },
                 "title": {
                     "type": "string"
                 },
@@ -978,6 +981,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "image_path": {
+                    "type": "string"
                 },
                 "last_modified": {
                     "type": "integer"

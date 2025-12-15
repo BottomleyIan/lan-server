@@ -5,6 +5,14 @@ FROM albums
 WHERE id = ?
   AND deleted_at IS NULL;
 
+-- Update album image path (only if currently NULL)
+-- name: UpdateAlbumImagePath :one
+UPDATE albums
+SET image_path = COALESCE(?, image_path)
+WHERE id = ?
+  AND deleted_at IS NULL
+RETURNING *;
+
 -- Upsert album by artist/title (revives soft-deleted)
 -- name: UpsertAlbum :one
 INSERT INTO albums (artist_id, title)

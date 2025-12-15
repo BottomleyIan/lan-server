@@ -14,6 +14,7 @@ type Album struct {
 	ID        int64
 	ArtistID  int64
 	Title     string
+	ImagePath dbtypes.NullString
 	DeletedAt dbtypes.NullTime
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -69,6 +70,7 @@ type Track struct {
 	Genre        dbtypes.NullString
 	Year         dbtypes.NullInt64
 	Rating       dbtypes.NullInt64
+	ImagePath    dbtypes.NullString
 	SizeBytes    int64
 	LastModified int64
 	LastSeenAt   time.Time

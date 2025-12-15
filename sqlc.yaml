@@ -53,6 +53,11 @@ sql:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullTime"
+          - column: "albums.image_path"
+            go_type:
+              import: "bottomley.ian/musicserver/internal/dbtypes"
+              package: "dbtypes"
+              type: "NullString"
           - column: "albums.created_at"
             go_type: "time.Time"
           - column: "albums.updated_at"
@@ -88,6 +93,11 @@ sql:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullInt64"
+          - column: "tracks.image_path"
+            go_type:
+              import: "bottomley.ian/musicserver/internal/dbtypes"
+              package: "dbtypes"
+              type: "NullString"
           - column: "tracks.last_seen_at"
             go_type: "time.Time"
           - column: "tracks.created_at"

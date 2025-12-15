@@ -81,7 +81,15 @@ RETURNING *;
 -- Update track metadata from tags
 -- name: UpdateTrackMetadata :one
 UPDATE tracks
-SET artist_id = ?, album_id = ?, genre = ?, year = ?
+SET artist_id = ?, album_id = ?, genre = ?, year = ?, image_path = COALESCE(?, image_path)
+WHERE id = ?
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- Update track image path (only set when provided)
+-- name: UpdateTrackImagePath :one
+UPDATE tracks
+SET image_path = ?
 WHERE id = ?
   AND deleted_at IS NULL
 RETURNING *;

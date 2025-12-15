@@ -35,6 +35,7 @@ SELECT
   t.genre,
   t.year,
   t.rating,
+  t.image_path,
   t.size_bytes,
   t.last_modified,
   t.last_seen_at,

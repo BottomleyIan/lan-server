@@ -63,6 +63,7 @@ SELECT
   t.genre,
   t.year,
   t.rating,
+  t.image_path,
   t.size_bytes,
   t.last_modified,
   t.last_seen_at,
@@ -95,6 +96,7 @@ type ListPlaylistTracksRow struct {
 	Genre                  dbtypes.NullString
 	Year                   dbtypes.NullInt64
 	Rating                 dbtypes.NullInt64
+	ImagePath              dbtypes.NullString
 	SizeBytes              int64
 	LastModified           int64
 	LastSeenAt             time.Time
@@ -131,6 +133,7 @@ func (q *Queries) ListPlaylistTracks(ctx context.Context, playlistID int64) ([]L
 			&i.Genre,
 			&i.Year,
 			&i.Rating,
+			&i.ImagePath,
 			&i.SizeBytes,
 			&i.LastModified,
 			&i.LastSeenAt,

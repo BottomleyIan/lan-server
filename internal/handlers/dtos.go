@@ -26,6 +26,7 @@ type TrackDTO struct {
 	Genre        *string    `json:"genre,omitempty"`
 	Year         *int64     `json:"year,omitempty"`
 	Rating       *int64     `json:"rating,omitempty"`
+	ImagePath    *string    `json:"image_path,omitempty"`
 	SizeBytes    int64      `json:"size_bytes"`
 	LastModified int64      `json:"last_modified"`
 	LastSeenAt   time.Time  `json:"last_seen_at"`
@@ -54,6 +55,7 @@ type AlbumDTO struct {
 	ID        int64      `json:"id"`
 	ArtistID  int64      `json:"artist_id"`
 	Title     string     `json:"title"`
+	ImagePath *string    `json:"image_path,omitempty"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
