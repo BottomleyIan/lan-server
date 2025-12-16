@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
 
@@ -31,7 +30,7 @@ func (h *Handlers) ListAlbums(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prefix := strings.TrimSpace(r.URL.Query().Get("startswith"))
+	prefix := r.URL.Query().Get("startswith")
 	var startsWith sql.NullString
 	if prefix != "" {
 		startsWith = sql.NullString{String: prefix, Valid: true}

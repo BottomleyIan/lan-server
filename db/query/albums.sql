@@ -38,7 +38,7 @@ RETURNING *;
 SELECT *
 FROM albums
 WHERE deleted_at IS NULL
-  AND (?1 IS NULL OR title LIKE (?1 || '%'))
+  AND (?1 IS NULL OR LOWER(title) LIKE (LOWER(?1) || '%'))
 ORDER BY title;
 
 -- List albums with artist info
@@ -49,7 +49,7 @@ SELECT
 FROM albums a
 LEFT JOIN artists ar ON ar.id = a.artist_id
 WHERE a.deleted_at IS NULL
-  AND (?1 IS NULL OR a.title LIKE (?1 || '%'))
+  AND (?1 IS NULL OR LOWER(a.title) LIKE (LOWER(?1) || '%'))
 ORDER BY a.title;
 
 -- Update album title/artist
