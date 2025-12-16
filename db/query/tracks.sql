@@ -122,6 +122,17 @@ WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
 ORDER BY t.rel_path;
 
+-- List playable tracks for an album without joins (roots currently available)
+-- name: ListPlayableTracksForAlbumBase :many
+SELECT t.*
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND f.available = 1
+  AND t.album_id = ?
+ORDER BY t.rel_path;
+
 -- Optional: get absolute path pieces for playback (folder path + rel path)
 -- name: GetPlayableTrackPathPartsByID :one
 SELECT

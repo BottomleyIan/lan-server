@@ -167,6 +167,17 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "album",
+                            "artist"
+                        ],
+                        "type": "string",
+                        "example": "album,artist",
+                        "description": "Comma-separated expansions (album,artist)",
+                        "name": "expand",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -715,6 +726,17 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Filter by album ID",
                         "name": "albumId",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "album",
+                            "artist"
+                        ],
+                        "type": "string",
+                        "example": "album,artist",
+                        "description": "Comma-separated expansions (album,artist)",
+                        "name": "expand",
                         "in": "query"
                     }
                 ],

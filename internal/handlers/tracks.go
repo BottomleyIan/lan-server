@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -22,12 +23,26 @@ type updateTrackRequest struct {
 	Rating *int64 `json:"rating,omitempty"`
 }
 
+type trackListOptions struct {
+	includeAlbum  bool
+	includeArtist bool
+}
+
+var (
+	allowedExpand = map[string]struct{}{
+		"album":  {},
+		"artist": {},
+	}
+	allowedExpandList = []string{"album", "artist"}
+)
+
 // ListTracks godoc
 // @Summary List tracks
 // @Description List all non-deleted tracks
 // @Tags tracks
 // @Produce json
 // @Param albumId query int false "Filter by album ID"
+// @Param expand query string false "Comma-separated expansions (album,artist)" Enums(album,artist) example(album,artist)
 // @Success 200 {array} TrackDTO
 // @Router /tracks [get]
 func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
@@ -36,28 +51,30 @@ func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	opts, err := parseTrackListOptions(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	albumIDStr := r.URL.Query().Get("albumId")
+	var albumID *int64
 	if albumIDStr != "" {
-		albumID, err := strconv.ParseInt(albumIDStr, 10, 64)
+		id, err := strconv.ParseInt(albumIDStr, 10, 64)
 		if err != nil {
 			http.Error(w, "invalid albumId", http.StatusBadRequest)
 			return
 		}
-		tracks, err := h.App.Queries.ListPlayableTracksForAlbum(r.Context(), dbtypes.NullInt64{Int64: albumID, Valid: true})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		writeJSON(w, tracksDTOFromAlbumRows(tracks))
-		return
+		albumID = &id
 	}
 
-	tracks, err := h.App.Queries.ListPlayableTracksWithJoins(r.Context())
+	tracks, err := h.listTracksShared(r.Context(), albumID, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, tracksDTOFromPlayableRows(tracks))
+
+	writeJSON(w, filterTracks(tracks, opts))
 }
 
 // GetTrack godoc
@@ -151,6 +168,99 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, trackDTOFromJoinedRow(updated))
+}
+
+func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts trackListOptions) ([]TrackDTO, error) {
+	if albumID != nil {
+		if opts.includeAlbum || opts.includeArtist {
+			rows, err := h.App.Queries.ListPlayableTracksForAlbum(ctx, dbtypes.NullInt64{Int64: *albumID, Valid: true})
+			if err != nil {
+				return nil, err
+			}
+			return tracksDTOFromAlbumRows(rows), nil
+		}
+
+		rows, err := h.App.Queries.ListPlayableTracksForAlbumBase(ctx, dbtypes.NullInt64{Int64: *albumID, Valid: true})
+		if err != nil {
+			return nil, err
+		}
+		return tracksDTOFromBase(rows), nil
+	}
+
+	if opts.includeAlbum || opts.includeArtist {
+		rows, err := h.App.Queries.ListPlayableTracksWithJoins(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return tracksDTOFromPlayableRows(rows), nil
+	}
+
+	rows, err := h.App.Queries.ListPlayableTracks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return tracksDTOFromBase(rows), nil
+}
+
+func parseTrackListOptions(r *http.Request) (trackListOptions, error) {
+	opts := trackListOptions{
+		includeAlbum:  true,
+		includeArtist: true,
+	}
+
+	expandRaw := r.URL.Query().Get("expand")
+
+	expandSet := parseCSVSet(expandRaw)
+	if expandRaw != "" {
+		if invalid := diffSet(expandSet, allowedExpand); len(invalid) > 0 {
+			return trackListOptions{}, fmt.Errorf("invalid expand value(s): %s; allowed: %s", strings.Join(invalid, ", "), strings.Join(allowedExpandList, ", "))
+		}
+		opts.includeAlbum = contains(expandSet, "album")
+		opts.includeArtist = contains(expandSet, "artist")
+	}
+
+	return opts, nil
+}
+
+func filterTracks(tracks []TrackDTO, opts trackListOptions) []TrackDTO {
+	for i := range tracks {
+		if !opts.includeAlbum {
+			tracks[i].Album = nil
+		}
+		if !opts.includeArtist {
+			tracks[i].Artist = nil
+		}
+	}
+	return tracks
+}
+
+func parseCSVSet(input string) map[string]struct{} {
+	out := make(map[string]struct{})
+	if input == "" {
+		return out
+	}
+	parts := strings.Split(input, ",")
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out[trimmed] = struct{}{}
+		}
+	}
+	return out
+}
+
+func diffSet(values, allowed map[string]struct{}) []string {
+	var invalid []string
+	for val := range values {
+		if _, ok := allowed[val]; !ok {
+			invalid = append(invalid, val)
+		}
+	}
+	return invalid
+}
+
+func contains(set map[string]struct{}, key string) bool {
+	_, ok := set[key]
+	return ok
 }
 
 // StreamTrack godoc

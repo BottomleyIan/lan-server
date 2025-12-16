@@ -76,11 +76,18 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 // @Tags albums
 // @Produce json
 // @Param id path int true "Album ID"
+// @Param expand query string false "Comma-separated expansions (album,artist)" Enums(album,artist) example(album,artist)
 // @Success 200 {array} TrackDTO
 // @Router /albums/{id}/tracks [get]
 func (h *Handlers) ListAlbumTracks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	opts, err := parseTrackListOptions(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -101,13 +108,13 @@ func (h *Handlers) ListAlbumTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.App.Queries.ListPlayableTracksForAlbum(r.Context(), dbtypes.NullInt64{Int64: id, Valid: true})
+	tracks, err := h.listTracksShared(r.Context(), &id, opts)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, tracksDTOFromAlbumRows(rows))
+	writeJSON(w, filterTracks(tracks, opts))
 }
 
 // UpdateAlbum godoc

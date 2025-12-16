@@ -310,6 +310,14 @@ paths:
         name: id
         required: true
         type: integer
+      - description: Comma-separated expansions (album,artist)
+        enum:
+        - album
+        - artist
+        example: album,artist
+        in: query
+        name: expand
+        type: string
       produces:
       - application/json
       responses:
@@ -668,6 +676,14 @@ paths:
         in: query
         name: albumId
         type: integer
+      - description: Comma-separated expansions (album,artist)
+        enum:
+        - album
+        - artist
+        example: album,artist
+        in: query
+        name: expand
+        type: string
       produces:
       - application/json
       responses:

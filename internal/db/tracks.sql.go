@@ -423,6 +423,59 @@ func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, albumID dbtype
 	return items, nil
 }
 
+const listPlayableTracksForAlbumBase = `-- name: ListPlayableTracksForAlbumBase :many
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND f.available = 1
+  AND t.album_id = ?
+ORDER BY t.rel_path
+`
+
+// List playable tracks for an album without joins (roots currently available)
+func (q *Queries) ListPlayableTracksForAlbumBase(ctx context.Context, albumID dbtypes.NullInt64) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumBase, albumID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.FolderID,
+			&i.ArtistID,
+			&i.AlbumID,
+			&i.RelPath,
+			&i.Filename,
+			&i.Ext,
+			&i.Genre,
+			&i.Year,
+			&i.Rating,
+			&i.ImagePath,
+			&i.SizeBytes,
+			&i.LastModified,
+			&i.LastSeenAt,
+			&i.DeletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPlayableTracksWithJoins = `-- name: ListPlayableTracksWithJoins :many
 SELECT
   t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
