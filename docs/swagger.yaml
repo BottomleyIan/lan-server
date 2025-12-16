@@ -315,7 +315,7 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Comma-separated expansions (album,artist)
+      - description: Comma-separated expansions (album,artist); defaults to none
         enum:
         - album
         - artist
@@ -690,7 +690,7 @@ paths:
         in: query
         name: albumId
         type: integer
-      - description: Comma-separated expansions (album,artist)
+      - description: Comma-separated expansions (album,artist); defaults to none
         enum:
         - album
         - artist

@@ -44,7 +44,7 @@ var (
 // @Tags tracks
 // @Produce json
 // @Param albumId query int false "Filter by album ID"
-// @Param expand query string false "Comma-separated expansions (album,artist)" Enums(album,artist) example(album,artist)
+// @Param expand query string false "Comma-separated expansions (album,artist); defaults to none" Enums(album,artist) example(album,artist)
 // @Param startswith query string false "Prefix filter on filename"
 // @Success 200 {array} TrackDTO
 // @Router /tracks [get]
@@ -215,8 +215,8 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts tr
 
 func parseTrackListOptions(r *http.Request) (trackListOptions, error) {
 	opts := trackListOptions{
-		includeAlbum:  true,
-		includeArtist: true,
+		includeAlbum:  false,
+		includeArtist: false,
 	}
 
 	expandRaw := r.URL.Query().Get("expand")

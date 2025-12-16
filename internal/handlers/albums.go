@@ -83,7 +83,7 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 // @Tags albums
 // @Produce json
 // @Param id path int true "Album ID"
-// @Param expand query string false "Comma-separated expansions (album,artist)" Enums(album,artist) example(album,artist)
+// @Param expand query string false "Comma-separated expansions (album,artist); defaults to none" Enums(album,artist) example(album,artist)
 // @Param startswith query string false "Prefix filter on filename"
 // @Success 200 {array} TrackDTO
 // @Router /albums/{id}/tracks [get]

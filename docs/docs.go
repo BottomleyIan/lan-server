@@ -183,7 +183,7 @@ const docTemplate = `{
                         ],
                         "type": "string",
                         "example": "album,artist",
-                        "description": "Comma-separated expansions (album,artist)",
+                        "description": "Comma-separated expansions (album,artist); defaults to none",
                         "name": "expand",
                         "in": "query"
                     },
@@ -757,7 +757,7 @@ const docTemplate = `{
                         ],
                         "type": "string",
                         "example": "album,artist",
-                        "description": "Comma-separated expansions (album,artist)",
+                        "description": "Comma-separated expansions (album,artist); defaults to none",
                         "name": "expand",
                         "in": "query"
                     },
