@@ -24,6 +24,14 @@ const docTemplate = `{
                     "albums"
                 ],
                 "summary": "List albums",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Prefix filter on title",
+                        "name": "startswith",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -178,6 +186,12 @@ const docTemplate = `{
                         "description": "Comma-separated expansions (album,artist)",
                         "name": "expand",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Prefix filter on filename",
+                        "name": "startswith",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -202,6 +216,14 @@ const docTemplate = `{
                     "artists"
                 ],
                 "summary": "List artists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Prefix filter on name",
+                        "name": "startswith",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -737,6 +759,12 @@ const docTemplate = `{
                         "example": "album,artist",
                         "description": "Comma-separated expansions (album,artist)",
                         "name": "expand",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Prefix filter on filename",
+                        "name": "startswith",
                         "in": "query"
                     }
                 ],

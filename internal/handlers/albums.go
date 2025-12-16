@@ -6,9 +6,9 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
-	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -22,6 +22,7 @@ type updateAlbumRequest struct {
 // @Summary List albums
 // @Tags albums
 // @Produce json
+// @Param startswith query string false "Prefix filter on title"
 // @Success 200 {array} AlbumDTO
 // @Router /albums [get]
 func (h *Handlers) ListAlbums(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +31,13 @@ func (h *Handlers) ListAlbums(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.App.Queries.ListAlbumsWithArtist(r.Context())
+	prefix := strings.TrimSpace(r.URL.Query().Get("startswith"))
+	var startsWith sql.NullString
+	if prefix != "" {
+		startsWith = sql.NullString{String: prefix, Valid: true}
+	}
+
+	rows, err := h.App.Queries.ListAlbumsWithArtist(r.Context(), startsWith)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -77,6 +84,7 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path int true "Album ID"
 // @Param expand query string false "Comma-separated expansions (album,artist)" Enums(album,artist) example(album,artist)
+// @Param startswith query string false "Prefix filter on filename"
 // @Success 200 {array} TrackDTO
 // @Router /albums/{id}/tracks [get]
 func (h *Handlers) ListAlbumTracks(w http.ResponseWriter, r *http.Request) {

@@ -74,12 +74,13 @@ const listAlbums = `-- name: ListAlbums :many
 SELECT id, artist_id, title, image_path, deleted_at, created_at, updated_at
 FROM albums
 WHERE deleted_at IS NULL
+  AND (?1 IS NULL OR title LIKE (?1 || '%'))
 ORDER BY title
 `
 
 // List albums
-func (q *Queries) ListAlbums(ctx context.Context) ([]Album, error) {
-	rows, err := q.db.QueryContext(ctx, listAlbums)
+func (q *Queries) ListAlbums(ctx context.Context, dollar_1 interface{}) ([]Album, error) {
+	rows, err := q.db.QueryContext(ctx, listAlbums, dollar_1)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +117,7 @@ SELECT
 FROM albums a
 LEFT JOIN artists ar ON ar.id = a.artist_id
 WHERE a.deleted_at IS NULL
+  AND (?1 IS NULL OR a.title LIKE (?1 || '%'))
 ORDER BY a.title
 `
 
@@ -125,8 +127,8 @@ type ListAlbumsWithArtistRow struct {
 }
 
 // List albums with artist info
-func (q *Queries) ListAlbumsWithArtist(ctx context.Context) ([]ListAlbumsWithArtistRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAlbumsWithArtist)
+func (q *Queries) ListAlbumsWithArtist(ctx context.Context, dollar_1 interface{}) ([]ListAlbumsWithArtistRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAlbumsWithArtist, dollar_1)
 	if err != nil {
 		return nil, err
 	}

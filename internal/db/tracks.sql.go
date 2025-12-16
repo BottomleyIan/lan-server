@@ -160,12 +160,13 @@ FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
+  AND (?1 IS NULL OR t.filename LIKE (?1 || '%'))
 ORDER BY t.rel_path
 `
 
 // Include unavailable roots too (for admin/debug UI)
-func (q *Queries) ListAllIndexedTracks(ctx context.Context) ([]Track, error) {
-	rows, err := q.db.QueryContext(ctx, listAllIndexedTracks)
+func (q *Queries) ListAllIndexedTracks(ctx context.Context, prefix interface{}) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, listAllIndexedTracks, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -294,12 +295,13 @@ JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
+  AND (?1 IS NULL OR t.filename LIKE (?1 || '%'))
 ORDER BY t.rel_path
 `
 
 // Default: list all playable tracks (roots currently available)
-func (q *Queries) ListPlayableTracks(ctx context.Context) ([]Track, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracks)
+func (q *Queries) ListPlayableTracks(ctx context.Context, prefix interface{}) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracks, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -354,8 +356,14 @@ WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
   AND t.album_id = ?
+  AND (?2 IS NULL OR t.filename LIKE (?2 || '%'))
 ORDER BY t.rel_path
 `
+
+type ListPlayableTracksForAlbumParams struct {
+	AlbumID dbtypes.NullInt64
+	Prefix  interface{}
+}
 
 type ListPlayableTracksForAlbumRow struct {
 	Track    Track
@@ -365,8 +373,8 @@ type ListPlayableTracksForAlbumRow struct {
 }
 
 // List playable tracks for an album (roots currently available)
-func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, albumID dbtypes.NullInt64) ([]ListPlayableTracksForAlbumRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbum, albumID)
+func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, arg ListPlayableTracksForAlbumParams) ([]ListPlayableTracksForAlbumRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbum, arg.AlbumID, arg.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -431,12 +439,18 @@ WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
   AND t.album_id = ?
+  AND (?2 IS NULL OR t.filename LIKE (?2 || '%'))
 ORDER BY t.rel_path
 `
 
+type ListPlayableTracksForAlbumBaseParams struct {
+	AlbumID dbtypes.NullInt64
+	Prefix  interface{}
+}
+
 // List playable tracks for an album without joins (roots currently available)
-func (q *Queries) ListPlayableTracksForAlbumBase(ctx context.Context, albumID dbtypes.NullInt64) ([]Track, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumBase, albumID)
+func (q *Queries) ListPlayableTracksForAlbumBase(ctx context.Context, arg ListPlayableTracksForAlbumBaseParams) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumBase, arg.AlbumID, arg.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -490,6 +504,7 @@ LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
+  AND (?1 IS NULL OR t.filename LIKE (?1 || '%'))
 ORDER BY t.rel_path
 `
 
@@ -501,8 +516,8 @@ type ListPlayableTracksWithJoinsRow struct {
 }
 
 // Default: list all playable tracks with artist/album info (roots currently available)
-func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context) ([]ListPlayableTracksWithJoinsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracksWithJoins)
+func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context, prefix interface{}) ([]ListPlayableTracksWithJoinsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksWithJoins, prefix)
 	if err != nil {
 		return nil, err
 	}

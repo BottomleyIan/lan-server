@@ -34,12 +34,13 @@ const listArtists = `-- name: ListArtists :many
 SELECT id, name, deleted_at, created_at, updated_at
 FROM artists
 WHERE deleted_at IS NULL
+  AND (?1 IS NULL OR name LIKE (?1 || '%'))
 ORDER BY name
 `
 
-// List artists
-func (q *Queries) ListArtists(ctx context.Context) ([]Artist, error) {
-	rows, err := q.db.QueryContext(ctx, listArtists)
+// List artists (optional prefix filter)
+func (q *Queries) ListArtists(ctx context.Context, dollar_1 interface{}) ([]Artist, error) {
+	rows, err := q.db.QueryContext(ctx, listArtists, dollar_1)
 	if err != nil {
 		return nil, err
 	}

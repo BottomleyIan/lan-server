@@ -215,6 +215,11 @@ info:
 paths:
   /albums:
     get:
+      parameters:
+      - description: Prefix filter on title
+        in: query
+        name: startswith
+        type: string
       produces:
       - application/json
       responses:
@@ -318,6 +323,10 @@ paths:
         in: query
         name: expand
         type: string
+      - description: Prefix filter on filename
+        in: query
+        name: startswith
+        type: string
       produces:
       - application/json
       responses:
@@ -332,6 +341,11 @@ paths:
       - albums
   /artists:
     get:
+      parameters:
+      - description: Prefix filter on name
+        in: query
+        name: startswith
+        type: string
       produces:
       - application/json
       responses:
@@ -683,6 +697,10 @@ paths:
         example: album,artist
         in: query
         name: expand
+        type: string
+      - description: Prefix filter on filename
+        in: query
+        name: startswith
         type: string
       produces:
       - application/json

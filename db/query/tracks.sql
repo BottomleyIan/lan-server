@@ -60,6 +60,7 @@ JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
+  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
 -- Include unavailable roots too (for admin/debug UI)
@@ -69,6 +70,7 @@ FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
+  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
 -- Default: list all playable tracks with artist/album info (roots currently available)
@@ -86,6 +88,7 @@ LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
+  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
 -- List playable tracks for an album (roots currently available)
@@ -104,6 +107,7 @@ WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
   AND t.album_id = ?
+  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
 -- Include unavailable roots too (for admin/debug UI) with artist/album info
@@ -131,6 +135,7 @@ WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND f.available = 1
   AND t.album_id = ?
+  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
 -- Optional: get absolute path pieces for playback (folder path + rel path)

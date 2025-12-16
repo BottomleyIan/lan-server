@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
 
@@ -20,6 +21,7 @@ type updateArtistRequest struct {
 // @Summary List artists
 // @Tags artists
 // @Produce json
+// @Param startswith query string false "Prefix filter on name"
 // @Success 200 {array} ArtistDTO
 // @Router /artists [get]
 func (h *Handlers) ListArtists(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +30,13 @@ func (h *Handlers) ListArtists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.App.Queries.ListArtists(r.Context())
+	prefix := strings.TrimSpace(r.URL.Query().Get("startswith"))
+	var startsWith sql.NullString
+	if prefix != "" {
+		startsWith = sql.NullString{String: prefix, Valid: true}
+	}
+
+	rows, err := h.App.Queries.ListArtists(r.Context(), startsWith)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

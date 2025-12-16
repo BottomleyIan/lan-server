@@ -14,11 +14,12 @@ ON CONFLICT(name) DO UPDATE SET
   deleted_at = NULL
 RETURNING *;
 
--- List artists
+-- List artists (optional prefix filter)
 -- name: ListArtists :many
 SELECT *
 FROM artists
 WHERE deleted_at IS NULL
+  AND (?1 IS NULL OR name LIKE (?1 || '%'))
 ORDER BY name;
 
 -- Update artist name

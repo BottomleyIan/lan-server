@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"mime"
 	"net/http"
@@ -26,6 +27,7 @@ type updateTrackRequest struct {
 type trackListOptions struct {
 	includeAlbum  bool
 	includeArtist bool
+	startsWith    *string
 }
 
 var (
@@ -43,6 +45,7 @@ var (
 // @Produce json
 // @Param albumId query int false "Filter by album ID"
 // @Param expand query string false "Comma-separated expansions (album,artist)" Enums(album,artist) example(album,artist)
+// @Param startswith query string false "Prefix filter on filename"
 // @Success 200 {array} TrackDTO
 // @Router /tracks [get]
 func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
@@ -171,16 +174,24 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts trackListOptions) ([]TrackDTO, error) {
+	prefix := nullStringFromPrefix(opts.startsWith)
+
 	if albumID != nil {
 		if opts.includeAlbum || opts.includeArtist {
-			rows, err := h.App.Queries.ListPlayableTracksForAlbum(ctx, dbtypes.NullInt64{Int64: *albumID, Valid: true})
+			rows, err := h.App.Queries.ListPlayableTracksForAlbum(ctx, db.ListPlayableTracksForAlbumParams{
+				AlbumID: dbtypes.NullInt64{Int64: *albumID, Valid: true},
+				Prefix:  prefix,
+			})
 			if err != nil {
 				return nil, err
 			}
 			return tracksDTOFromAlbumRows(rows), nil
 		}
 
-		rows, err := h.App.Queries.ListPlayableTracksForAlbumBase(ctx, dbtypes.NullInt64{Int64: *albumID, Valid: true})
+		rows, err := h.App.Queries.ListPlayableTracksForAlbumBase(ctx, db.ListPlayableTracksForAlbumBaseParams{
+			AlbumID: dbtypes.NullInt64{Int64: *albumID, Valid: true},
+			Prefix:  prefix,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -188,14 +199,14 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts tr
 	}
 
 	if opts.includeAlbum || opts.includeArtist {
-		rows, err := h.App.Queries.ListPlayableTracksWithJoins(ctx)
+		rows, err := h.App.Queries.ListPlayableTracksWithJoins(ctx, prefix)
 		if err != nil {
 			return nil, err
 		}
 		return tracksDTOFromPlayableRows(rows), nil
 	}
 
-	rows, err := h.App.Queries.ListPlayableTracks(ctx)
+	rows, err := h.App.Queries.ListPlayableTracks(ctx, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +220,7 @@ func parseTrackListOptions(r *http.Request) (trackListOptions, error) {
 	}
 
 	expandRaw := r.URL.Query().Get("expand")
+	startsWith := strings.TrimSpace(r.URL.Query().Get("startswith"))
 
 	expandSet := parseCSVSet(expandRaw)
 	if expandRaw != "" {
@@ -217,6 +229,10 @@ func parseTrackListOptions(r *http.Request) (trackListOptions, error) {
 		}
 		opts.includeAlbum = contains(expandSet, "album")
 		opts.includeArtist = contains(expandSet, "artist")
+	}
+
+	if startsWith != "" {
+		opts.startsWith = &startsWith
 	}
 
 	return opts, nil
@@ -232,6 +248,13 @@ func filterTracks(tracks []TrackDTO, opts trackListOptions) []TrackDTO {
 		}
 	}
 	return tracks
+}
+
+func nullStringFromPrefix(prefix *string) sql.NullString {
+	if prefix == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *prefix, Valid: true}
 }
 
 func parseCSVSet(input string) map[string]struct{} {
