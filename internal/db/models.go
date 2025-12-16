@@ -65,6 +65,7 @@ type Track struct {
 	ArtistID     dbtypes.NullInt64
 	AlbumID      dbtypes.NullInt64
 	RelPath      string
+	Title        string
 	Filename     string
 	Ext          string
 	Genre        dbtypes.NullString

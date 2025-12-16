@@ -2,11 +2,12 @@
 -- Always bumps last_seen_at to CURRENT_TIMESTAMP.
 -- name: UpsertTrack :one
 INSERT INTO tracks (
-  folder_id, rel_path, filename, ext, size_bytes, last_modified, last_seen_at, deleted_at
+  folder_id, rel_path, title, filename, ext, size_bytes, last_modified, last_seen_at, deleted_at
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL
+  ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL
 )
 ON CONFLICT(folder_id, rel_path) DO UPDATE SET
+  title         = COALESCE(excluded.title, tracks.title),
   filename      = excluded.filename,
   ext           = excluded.ext,
   size_bytes    = excluded.size_bytes,
@@ -162,7 +163,7 @@ RETURNING *;
 -- Update track metadata from tags
 -- name: UpdateTrackMetadata :one
 UPDATE tracks
-SET artist_id = ?, album_id = ?, genre = ?, year = ?, image_path = COALESCE(?, image_path)
+SET artist_id = ?, album_id = ?, title = ?, genre = ?, year = ?, image_path = COALESCE(?, image_path)
 WHERE id = ?
   AND deleted_at IS NULL
 RETURNING *;

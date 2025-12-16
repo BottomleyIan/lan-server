@@ -76,6 +76,7 @@ func trackDTOFromParts(tk db.Track, artist db.Artist, album db.Album, albumArtis
 		Artist:       artistSummaryFromArtist(artist),
 		Album:        albumSummaryFromAlbum(album, albumArtist),
 		RelPath:      tk.RelPath,
+		Title:        tk.Title,
 		Filename:     tk.Filename,
 		Ext:          tk.Ext,
 		Genre:        stringPtrFromNullString(tk.Genre),

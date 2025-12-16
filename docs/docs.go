@@ -1180,6 +1180,9 @@ const docTemplate = `{
                 "size_bytes": {
                     "type": "integer"
                 },
+                "title": {
+                    "type": "string"
+                },
                 "updated_at": {
                     "type": "string"
                 },

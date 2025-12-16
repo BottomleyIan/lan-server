@@ -23,6 +23,7 @@ type TrackDTO struct {
 	Artist       *ArtistSummaryDTO `json:"artist,omitempty"`
 	Album        *AlbumSummaryDTO  `json:"album,omitempty"`
 	RelPath      string            `json:"rel_path"`
+	Title        string            `json:"title"`
 	Filename     string            `json:"filename"`
 	Ext          string            `json:"ext"`
 	Genre        *string           `json:"genre,omitempty"`

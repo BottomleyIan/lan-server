@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   album_id INTEGER NULL,
 
   rel_path TEXT NOT NULL,           -- relative to folders.path
+  title TEXT NOT NULL DEFAULT '',   -- tag title (may be blank/missing)
   filename TEXT NOT NULL,
   ext TEXT NOT NULL,                -- lowercase, no dot (enforce in code)
 

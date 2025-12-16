@@ -43,7 +43,7 @@ func (q *Queries) AddPlaylistTrack(ctx context.Context, arg AddPlaylistTrackPara
 const listPlaylistTracks = `-- name: ListPlaylistTracks :many
 SELECT
   pt.id, pt.playlist_id, pt.track_id, pt.position, pt.deleted_at, pt.created_at, pt.updated_at,
-  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
   ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
   al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
   al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
@@ -89,6 +89,7 @@ func (q *Queries) ListPlaylistTracks(ctx context.Context, playlistID int64) ([]L
 			&i.Track.ArtistID,
 			&i.Track.AlbumID,
 			&i.Track.RelPath,
+			&i.Track.Title,
 			&i.Track.Filename,
 			&i.Track.Ext,
 			&i.Track.Genre,

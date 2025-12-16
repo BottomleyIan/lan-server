@@ -162,6 +162,8 @@ definitions:
         type: string
       size_bytes:
         type: integer
+      title:
+        type: string
       updated_at:
         type: string
       year:

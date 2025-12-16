@@ -83,10 +83,12 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 		rel = filepath.ToSlash(rel)
 		sizeBytes := info.Size()
 		lastModified := info.ModTime().Unix()
+		baseTitle := strings.TrimSuffix(d.Name(), ext)
 
 		utp := db.UpsertTrackParams{
 			FolderID:     folderID,
 			RelPath:      rel,
+			Title:        baseTitle,
 			Filename:     d.Name(),
 			Ext:          strings.TrimPrefix(ext, "."),
 			SizeBytes:    sizeBytes,
@@ -108,16 +110,21 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 
 		var genre dbtypes.NullString
 		var year dbtypes.NullInt64
+		title := baseTitle
 		if g := strings.TrimSpace(metadata.Genre); g != "" {
 			genre = dbtypes.NullString{String: g, Valid: true}
 		}
 		if metadata.Year > 0 {
 			year = dbtypes.NullInt64{Int64: int64(metadata.Year), Valid: true}
 		}
+		if t := strings.TrimSpace(metadata.Title); t != "" {
+			title = t
+		}
 
 		_, err = s.Q.UpdateTrackMetadata(ctx, db.UpdateTrackMetadataParams{
 			ArtistID:  artistID,
 			AlbumID:   albumID,
+			Title:     title,
 			Genre:     genre,
 			Year:      year,
 			ImagePath: dbtypes.NullString{},
