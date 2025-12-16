@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"bottomley.ian/musicserver/internal/db"
+	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -68,6 +69,45 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, albumDTOFromParts(album.Album, album.Artist))
+}
+
+// ListAlbumTracks godoc
+// @Summary List tracks for an album
+// @Tags albums
+// @Produce json
+// @Param id path int true "Album ID"
+// @Success 200 {array} TrackDTO
+// @Router /albums/{id}/tracks [get]
+func (h *Handlers) ListAlbumTracks(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	// ensure album exists
+	if _, err := h.App.Queries.GetAlbumByID(r.Context(), id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "album not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := h.App.Queries.ListPlayableTracksForAlbum(r.Context(), dbtypes.NullInt64{Int64: id, Valid: true})
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, tracksDTOFromAlbumRows(rows))
 }
 
 // UpdateAlbum godoc

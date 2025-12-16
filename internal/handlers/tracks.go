@@ -27,11 +27,28 @@ type updateTrackRequest struct {
 // @Description List all non-deleted tracks
 // @Tags tracks
 // @Produce json
+// @Param albumId query int false "Filter by album ID"
 // @Success 200 {array} TrackDTO
 // @Router /tracks [get]
 func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	albumIDStr := r.URL.Query().Get("albumId")
+	if albumIDStr != "" {
+		albumID, err := strconv.ParseInt(albumIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "invalid albumId", http.StatusBadRequest)
+			return
+		}
+		tracks, err := h.App.Queries.ListPlayableTracksForAlbum(r.Context(), dbtypes.NullInt64{Int64: albumID, Valid: true})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, tracksDTOFromAlbumRows(tracks))
 		return
 	}
 

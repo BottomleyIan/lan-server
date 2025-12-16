@@ -100,6 +100,7 @@ func main() {
 		r.Route("/albums", func(r chi.Router) {
 			r.Get("/", h.ListAlbums)
 			r.Get("/{id}", h.GetAlbum)
+			r.Get("/{id}/tracks", h.ListAlbumTracks)
 			r.Put("/{id}", h.UpdateAlbum)
 			r.Delete("/{id}", h.DeleteAlbum)
 			r.Get("/{id}/image", h.GetAlbumImage)

@@ -151,6 +151,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/albums/{id}/tracks": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "albums"
+                ],
+                "summary": "List tracks for an album",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Album ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.TrackDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/artists": {
             "get": {
                 "produces": [
@@ -679,6 +710,14 @@ const docTemplate = `{
                     "tracks"
                 ],
                 "summary": "List tracks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter by album ID",
+                        "name": "albumId",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

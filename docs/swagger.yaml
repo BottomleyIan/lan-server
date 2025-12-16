@@ -302,6 +302,26 @@ paths:
       summary: Get album image
       tags:
       - images
+  /albums/{id}/tracks:
+    get:
+      parameters:
+      - description: Album ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.TrackDTO'
+            type: array
+      summary: List tracks for an album
+      tags:
+      - albums
   /artists:
     get:
       produces:
@@ -643,6 +663,11 @@ paths:
   /tracks:
     get:
       description: List all non-deleted tracks
+      parameters:
+      - description: Filter by album ID
+        in: query
+        name: albumId
+        type: integer
       produces:
       - application/json
       responses:
