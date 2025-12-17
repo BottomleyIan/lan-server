@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
+	"bottomley.ian/musicserver/internal/services/scanner"
 )
 
 // ListFolders godoc
@@ -155,10 +159,32 @@ func (h *Handlers) ScanFolder(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	err = h.Scanner.ScanFolder(ctx, id)
+	if err != nil {
+		var finishErr error
+		switch {
+		case errors.Is(err, scanner.ErrFolderUnavailable):
+			finishErr = h.App.Queries.FinishFolderScanUnavailable(ctx, err.Error(), id)
+		case errors.Is(err, context.Canceled):
+			finishErr = h.App.Queries.FinishFolderScanError(ctx, "scan canceled", id)
+		default:
+			finishErr = h.App.Queries.FinishFolderScanError(ctx, err.Error(), id)
+		}
+		if finishErr != nil {
+			log.Printf("failed to record scan failure for folder %d: %v", id, finishErr)
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.App.Queries.FinishFolderScanOK(ctx, id); err != nil {
+		log.Printf("failed to record scan success for folder %d: %v", id, err)
+		http.Error(w, "failed to record scan result", http.StatusInternalServerError)
+		return
+	}
 
 	dto := ScanDTO{
 		FolderID:  id,
-		Status:    "running",
+		Status:    "ok",
 		StartedAt: startedAt.Time,
 	}
 

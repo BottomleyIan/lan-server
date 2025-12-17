@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -35,6 +36,8 @@ var audioExt = map[string]bool{
 	".m4a":  true,
 }
 
+var ErrFolderUnavailable = errors.New("folder unavailable")
+
 func isMusic(entry fs.DirEntry) (ext string, ok bool) {
 	if entry.IsDir() {
 		return "", false
@@ -51,6 +54,13 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 	root, err := expandPath(folder.Path)
 	if err != nil {
 		return err
+	}
+	info, statErr := s.FS.Stat(root)
+	if statErr != nil {
+		return fmt.Errorf("%w: %v", ErrFolderUnavailable, statErr)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%w: %s is not a directory", ErrFolderUnavailable, root)
 	}
 	log.Printf("%s", root)
 	return s.FS.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
