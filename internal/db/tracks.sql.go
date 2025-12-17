@@ -298,14 +298,19 @@ FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
-  AND (?1 IS NULL OR t.filename LIKE (?1 || '%'))
+  AND (?1 = 1 OR f.available = 1)
+  AND (?2 IS NULL OR t.filename LIKE (?2 || '%'))
 ORDER BY t.rel_path
 `
 
+type ListPlayableTracksParams struct {
+	IncludeUnavailable interface{}
+	Prefix             interface{}
+}
+
 // Default: list all playable tracks (roots currently available)
-func (q *Queries) ListPlayableTracks(ctx context.Context, prefix interface{}) ([]Track, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracks, prefix)
+func (q *Queries) ListPlayableTracks(ctx context.Context, arg ListPlayableTracksParams) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracks, arg.IncludeUnavailable, arg.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -359,15 +364,16 @@ LEFT JOIN albums al ON al.id = t.album_id
 LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
-  AND t.album_id = ?
-  AND (?2 IS NULL OR t.filename LIKE (?2 || '%'))
+  AND (?1 = 1 OR f.available = 1)
+  AND t.album_id = ?2
+  AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
 ORDER BY t.rel_path
 `
 
 type ListPlayableTracksForAlbumParams struct {
+	Column1 interface{}
 	AlbumID dbtypes.NullInt64
-	Prefix  interface{}
+	Column3 interface{}
 }
 
 type ListPlayableTracksForAlbumRow struct {
@@ -379,7 +385,7 @@ type ListPlayableTracksForAlbumRow struct {
 
 // List playable tracks for an album (roots currently available)
 func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, arg ListPlayableTracksForAlbumParams) ([]ListPlayableTracksForAlbumRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbum, arg.AlbumID, arg.Prefix)
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbum, arg.Column1, arg.AlbumID, arg.Column3)
 	if err != nil {
 		return nil, err
 	}
@@ -443,20 +449,21 @@ FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
-  AND t.album_id = ?
-  AND (?2 IS NULL OR t.filename LIKE (?2 || '%'))
+  AND (?1 = 1 OR f.available = 1)
+  AND t.album_id = ?2
+  AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
 ORDER BY t.rel_path
 `
 
 type ListPlayableTracksForAlbumBaseParams struct {
+	Column1 interface{}
 	AlbumID dbtypes.NullInt64
-	Prefix  interface{}
+	Column3 interface{}
 }
 
 // List playable tracks for an album without joins (roots currently available)
 func (q *Queries) ListPlayableTracksForAlbumBase(ctx context.Context, arg ListPlayableTracksForAlbumBaseParams) ([]Track, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumBase, arg.AlbumID, arg.Prefix)
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumBase, arg.Column1, arg.AlbumID, arg.Column3)
 	if err != nil {
 		return nil, err
 	}
@@ -510,10 +517,15 @@ LEFT JOIN albums al ON al.id = t.album_id
 LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
-  AND (?1 IS NULL OR t.filename LIKE (?1 || '%'))
+  AND (?1 = 1 OR f.available = 1)
+  AND (?2 IS NULL OR t.filename LIKE (?2 || '%'))
 ORDER BY t.rel_path
 `
+
+type ListPlayableTracksWithJoinsParams struct {
+	IncludeUnavailable interface{}
+	Prefix             interface{}
+}
 
 type ListPlayableTracksWithJoinsRow struct {
 	Track    Track
@@ -523,8 +535,8 @@ type ListPlayableTracksWithJoinsRow struct {
 }
 
 // Default: list all playable tracks with artist/album info (roots currently available)
-func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context, prefix interface{}) ([]ListPlayableTracksWithJoinsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPlayableTracksWithJoins, prefix)
+func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context, arg ListPlayableTracksWithJoinsParams) ([]ListPlayableTracksWithJoinsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksWithJoins, arg.IncludeUnavailable, arg.Prefix)
 	if err != nil {
 		return nil, err
 	}

@@ -24,6 +24,12 @@
                         "description": "Prefix filter on title",
                         "name": "startswith",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include albums whose tracks are in unavailable folders (default: false)",
+                        "name": "include_unavailable",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -185,6 +191,12 @@
                         "type": "string",
                         "description": "Prefix filter on filename",
                         "name": "startswith",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include tracks from unavailable folders (default: false)",
+                        "name": "include_unavailable",
                         "in": "query"
                     }
                 ],
@@ -868,6 +880,12 @@
                         "type": "string",
                         "description": "Prefix filter on filename",
                         "name": "startswith",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include tracks from unavailable folders (default: false)",
+                        "name": "include_unavailable",
                         "in": "query"
                     }
                 ],

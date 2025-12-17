@@ -70,46 +70,6 @@ func (q *Queries) GetAlbumWithArtist(ctx context.Context, id int64) (GetAlbumWit
 	return i, err
 }
 
-const listAlbums = `-- name: ListAlbums :many
-SELECT id, artist_id, title, image_path, deleted_at, created_at, updated_at
-FROM albums
-WHERE deleted_at IS NULL
-  AND (?1 IS NULL OR LOWER(title) LIKE (LOWER(?1) || '%'))
-ORDER BY title
-`
-
-// List albums
-func (q *Queries) ListAlbums(ctx context.Context, dollar_1 interface{}) ([]Album, error) {
-	rows, err := q.db.QueryContext(ctx, listAlbums, dollar_1)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Album
-	for rows.Next() {
-		var i Album
-		if err := rows.Scan(
-			&i.ID,
-			&i.ArtistID,
-			&i.Title,
-			&i.ImagePath,
-			&i.DeletedAt,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listAlbumsWithArtist = `-- name: ListAlbumsWithArtist :many
 SELECT
   a.id, a.artist_id, a.title, a.image_path, a.deleted_at, a.created_at, a.updated_at,
@@ -118,17 +78,34 @@ FROM albums a
 LEFT JOIN artists ar ON ar.id = a.artist_id
 WHERE a.deleted_at IS NULL
   AND (?1 IS NULL OR LOWER(a.title) LIKE (LOWER(?1) || '%'))
+  AND (
+    ?2 = 1
+    OR EXISTS (
+      SELECT 1
+      FROM tracks t
+      JOIN folders f ON f.id = t.folder_id
+      WHERE t.deleted_at IS NULL
+        AND f.deleted_at IS NULL
+        AND f.available = 1
+        AND t.album_id = a.id
+    )
+  )
 ORDER BY a.title
 `
+
+type ListAlbumsWithArtistParams struct {
+	Startswith         interface{}
+	IncludeUnavailable interface{}
+}
 
 type ListAlbumsWithArtistRow struct {
 	Album  Album
 	Artist Artist
 }
 
-// List albums with artist info
-func (q *Queries) ListAlbumsWithArtist(ctx context.Context, dollar_1 interface{}) ([]ListAlbumsWithArtistRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAlbumsWithArtist, dollar_1)
+// List albums (optionally include unavailable folders)
+func (q *Queries) ListAlbumsWithArtist(ctx context.Context, arg ListAlbumsWithArtistParams) ([]ListAlbumsWithArtistRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAlbumsWithArtist, arg.Startswith, arg.IncludeUnavailable)
 	if err != nil {
 		return nil, err
 	}

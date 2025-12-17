@@ -25,9 +25,10 @@ type updateTrackRequest struct {
 }
 
 type trackListOptions struct {
-	includeAlbum  bool
-	includeArtist bool
-	startsWith    *string
+	includeAlbum       bool
+	includeArtist      bool
+	startsWith         *string
+	includeUnavailable bool
 }
 
 var (
@@ -46,6 +47,7 @@ var (
 // @Param albumId query int false "Filter by album ID"
 // @Param expand query string false "Comma-separated expansions (album,artist); defaults to none" Enums(album,artist) example(album,artist)
 // @Param startswith query string false "Prefix filter on filename"
+// @Param include_unavailable query bool false "Include tracks from unavailable folders (default: false)"
 // @Success 200 {array} TrackDTO
 // @Router /tracks [get]
 func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
@@ -175,12 +177,17 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts trackListOptions) ([]TrackDTO, error) {
 	prefix := nullStringFromPrefix(opts.startsWith)
+	includeUnavailable := int64(0)
+	if opts.includeUnavailable {
+		includeUnavailable = 1
+	}
 
 	if albumID != nil {
 		if opts.includeAlbum || opts.includeArtist {
 			rows, err := h.App.Queries.ListPlayableTracksForAlbum(ctx, db.ListPlayableTracksForAlbumParams{
+				Column1: includeUnavailable,
 				AlbumID: dbtypes.NullInt64{Int64: *albumID, Valid: true},
-				Prefix:  prefix,
+				Column3: prefix,
 			})
 			if err != nil {
 				return nil, err
@@ -189,8 +196,9 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts tr
 		}
 
 		rows, err := h.App.Queries.ListPlayableTracksForAlbumBase(ctx, db.ListPlayableTracksForAlbumBaseParams{
+			Column1: includeUnavailable,
 			AlbumID: dbtypes.NullInt64{Int64: *albumID, Valid: true},
-			Prefix:  prefix,
+			Column3: prefix,
 		})
 		if err != nil {
 			return nil, err
@@ -199,14 +207,20 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts tr
 	}
 
 	if opts.includeAlbum || opts.includeArtist {
-		rows, err := h.App.Queries.ListPlayableTracksWithJoins(ctx, prefix)
+		rows, err := h.App.Queries.ListPlayableTracksWithJoins(ctx, db.ListPlayableTracksWithJoinsParams{
+			Prefix:             prefix,
+			IncludeUnavailable: includeUnavailable,
+		})
 		if err != nil {
 			return nil, err
 		}
 		return tracksDTOFromPlayableRows(rows), nil
 	}
 
-	rows, err := h.App.Queries.ListPlayableTracks(ctx, prefix)
+	rows, err := h.App.Queries.ListPlayableTracks(ctx, db.ListPlayableTracksParams{
+		Prefix:             prefix,
+		IncludeUnavailable: includeUnavailable,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +235,11 @@ func parseTrackListOptions(r *http.Request) (trackListOptions, error) {
 
 	expandRaw := r.URL.Query().Get("expand")
 	startsWith := strings.TrimSpace(r.URL.Query().Get("startswith"))
+	includeUnavailableRaw := strings.TrimSpace(r.URL.Query().Get("include_unavailable"))
+	if includeUnavailableRaw == "" {
+		// Accept camelCase as a fallback.
+		includeUnavailableRaw = strings.TrimSpace(r.URL.Query().Get("includeUnavailable"))
+	}
 
 	expandSet := parseCSVSet(expandRaw)
 	if expandRaw != "" {
@@ -233,6 +252,14 @@ func parseTrackListOptions(r *http.Request) (trackListOptions, error) {
 
 	if startsWith != "" {
 		opts.startsWith = &startsWith
+	}
+
+	if includeUnavailableRaw != "" {
+		parsed, err := strconv.ParseBool(includeUnavailableRaw)
+		if err != nil {
+			return trackListOptions{}, fmt.Errorf("invalid include_unavailable: %v", err)
+		}
+		opts.includeUnavailable = parsed
 	}
 
 	return opts, nil

@@ -33,15 +33,7 @@ ON CONFLICT(artist_id, title) DO UPDATE SET
   deleted_at = NULL
 RETURNING *;
 
--- List albums
--- name: ListAlbums :many
-SELECT *
-FROM albums
-WHERE deleted_at IS NULL
-  AND (?1 IS NULL OR LOWER(title) LIKE (LOWER(?1) || '%'))
-ORDER BY title;
-
--- List albums with artist info
+-- List albums (optionally include unavailable folders)
 -- name: ListAlbumsWithArtist :many
 SELECT
   sqlc.embed(a),
@@ -49,7 +41,19 @@ SELECT
 FROM albums a
 LEFT JOIN artists ar ON ar.id = a.artist_id
 WHERE a.deleted_at IS NULL
-  AND (?1 IS NULL OR LOWER(a.title) LIKE (LOWER(?1) || '%'))
+  AND (sqlc.narg('startswith') IS NULL OR LOWER(a.title) LIKE (LOWER(sqlc.narg('startswith')) || '%'))
+  AND (
+    sqlc.narg('include_unavailable') = 1
+    OR EXISTS (
+      SELECT 1
+      FROM tracks t
+      JOIN folders f ON f.id = t.folder_id
+      WHERE t.deleted_at IS NULL
+        AND f.deleted_at IS NULL
+        AND f.available = 1
+        AND t.album_id = a.id
+    )
+  )
 ORDER BY a.title;
 
 -- Update album title/artist

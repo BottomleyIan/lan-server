@@ -60,7 +60,7 @@ FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
+  AND (sqlc.narg('include_unavailable') = 1 OR f.available = 1)
   AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
@@ -88,7 +88,7 @@ LEFT JOIN albums al ON al.id = t.album_id
 LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
+  AND (sqlc.narg('include_unavailable') = 1 OR f.available = 1)
   AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
 ORDER BY t.rel_path;
 
@@ -106,9 +106,9 @@ LEFT JOIN albums al ON al.id = t.album_id
 LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
-  AND t.album_id = ?
-  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
+  AND (?1 = 1 OR f.available = 1)
+  AND t.album_id = ?2
+  AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
 ORDER BY t.rel_path;
 
 -- Include unavailable roots too (for admin/debug UI) with artist/album info
@@ -134,9 +134,9 @@ FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
-  AND f.available = 1
-  AND t.album_id = ?
-  AND (sqlc.narg('prefix') IS NULL OR t.filename LIKE (sqlc.narg('prefix') || '%'))
+  AND (?1 = 1 OR f.available = 1)
+  AND t.album_id = ?2
+  AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
 ORDER BY t.rel_path;
 
 -- Optional: get absolute path pieces for playback (folder path + rel path)

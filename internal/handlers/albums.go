@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
 
@@ -22,6 +23,7 @@ type updateAlbumRequest struct {
 // @Tags albums
 // @Produce json
 // @Param startswith query string false "Prefix filter on title"
+// @Param include_unavailable query bool false "Include albums whose tracks are in unavailable folders (default: false)"
 // @Success 200 {array} AlbumDTO
 // @Router /albums [get]
 func (h *Handlers) ListAlbums(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +38,23 @@ func (h *Handlers) ListAlbums(w http.ResponseWriter, r *http.Request) {
 		startsWith = sql.NullString{String: prefix, Valid: true}
 	}
 
-	rows, err := h.App.Queries.ListAlbumsWithArtist(r.Context(), startsWith)
+	includeUnavailableRaw := strings.TrimSpace(r.URL.Query().Get("include_unavailable"))
+	includeUnavailable := int64(0)
+	if includeUnavailableRaw != "" {
+		parsed, err := strconv.ParseBool(includeUnavailableRaw)
+		if err != nil {
+			http.Error(w, "invalid include_unavailable", http.StatusBadRequest)
+			return
+		}
+		if parsed {
+			includeUnavailable = 1
+		}
+	}
+
+	rows, err := h.App.Queries.ListAlbumsWithArtist(r.Context(), db.ListAlbumsWithArtistParams{
+		Startswith:         startsWith,
+		IncludeUnavailable: includeUnavailable,
+	})
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -84,6 +102,7 @@ func (h *Handlers) GetAlbum(w http.ResponseWriter, r *http.Request) {
 // @Param id path int true "Album ID"
 // @Param expand query string false "Comma-separated expansions (album,artist); defaults to none" Enums(album,artist) example(album,artist)
 // @Param startswith query string false "Prefix filter on filename"
+// @Param include_unavailable query bool false "Include tracks from unavailable folders (default: false)"
 // @Success 200 {array} TrackDTO
 // @Router /albums/{id}/tracks [get]
 func (h *Handlers) ListAlbumTracks(w http.ResponseWriter, r *http.Request) {

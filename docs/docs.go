@@ -30,6 +30,12 @@ const docTemplate = `{
                         "description": "Prefix filter on title",
                         "name": "startswith",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include albums whose tracks are in unavailable folders (default: false)",
+                        "name": "include_unavailable",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -191,6 +197,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Prefix filter on filename",
                         "name": "startswith",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include tracks from unavailable folders (default: false)",
+                        "name": "include_unavailable",
                         "in": "query"
                     }
                 ],
@@ -874,6 +886,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Prefix filter on filename",
                         "name": "startswith",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include tracks from unavailable folders (default: false)",
+                        "name": "include_unavailable",
                         "in": "query"
                     }
                 ],

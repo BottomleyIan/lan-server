@@ -227,6 +227,11 @@ paths:
         in: query
         name: startswith
         type: string
+      - description: 'Include albums whose tracks are in unavailable folders (default:
+          false)'
+        in: query
+        name: include_unavailable
+        type: boolean
       produces:
       - application/json
       responses:
@@ -334,6 +339,10 @@ paths:
         in: query
         name: startswith
         type: string
+      - description: 'Include tracks from unavailable folders (default: false)'
+        in: query
+        name: include_unavailable
+        type: boolean
       produces:
       - application/json
       responses:
@@ -780,6 +789,10 @@ paths:
         in: query
         name: startswith
         type: string
+      - description: 'Include tracks from unavailable folders (default: false)'
+        in: query
+        name: include_unavailable
+        type: boolean
       produces:
       - application/json
       responses:
