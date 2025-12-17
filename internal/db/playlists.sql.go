@@ -86,6 +86,22 @@ func (q *Queries) ListPlaylists(ctx context.Context) ([]Playlist, error) {
 	return items, nil
 }
 
+const softDeletePlaylist = `-- name: SoftDeletePlaylist :execrows
+UPDATE playlists
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE id = ?
+  AND deleted_at IS NULL
+`
+
+// Soft delete playlist
+func (q *Queries) SoftDeletePlaylist(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, softDeletePlaylist, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const updatePlaylist = `-- name: UpdatePlaylist :one
 UPDATE playlists
 SET name = ?

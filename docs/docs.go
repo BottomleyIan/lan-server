@@ -615,6 +615,88 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "tags": [
+                    "playlists"
+                ],
+                "summary": "Delete playlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Playlist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/playlists/{id}/clear": {
+            "post": {
+                "tags": [
+                    "playlists"
+                ],
+                "summary": "Remove all tracks from a playlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Playlist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/playlists/{id}/enqueue": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "playlists"
+                ],
+                "summary": "Enqueue a track at the end of a playlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Playlist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Track to enqueue",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.enqueuePlaylistTrackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.PlaylistTrackDTO"
+                        }
+                    }
+                }
             }
         },
         "/playlists/{id}/tracks": {
@@ -729,6 +811,33 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/handlers.PlaylistTrackDTO"
                         }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "playlists"
+                ],
+                "summary": "Delete a track from a playlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Playlist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Track ID",
+                        "name": "track_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
@@ -1215,6 +1324,14 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.enqueuePlaylistTrackRequest": {
+            "type": "object",
+            "properties": {
+                "track_id": {
+                    "type": "integer"
                 }
             }
         },

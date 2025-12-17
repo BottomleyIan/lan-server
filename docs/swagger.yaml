@@ -186,6 +186,11 @@ definitions:
       name:
         type: string
     type: object
+  handlers.enqueuePlaylistTrackRequest:
+    properties:
+      track_id:
+        type: integer
+    type: object
   handlers.updateAlbumRequest:
     properties:
       artist_id:
@@ -566,6 +571,19 @@ paths:
       tags:
       - playlists
   /playlists/{id}:
+    delete:
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Delete playlist
+      tags:
+      - playlists
     get:
       parameters:
       - description: Playlist ID
@@ -606,6 +624,46 @@ paths:
           schema:
             $ref: '#/definitions/handlers.PlaylistDTO'
       summary: Update playlist
+      tags:
+      - playlists
+  /playlists/{id}/clear:
+    post:
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Remove all tracks from a playlist
+      tags:
+      - playlists
+  /playlists/{id}/enqueue:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Track to enqueue
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.enqueuePlaylistTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PlaylistTrackDTO'
+      summary: Enqueue a track at the end of a playlist
       tags:
       - playlists
   /playlists/{id}/tracks:
@@ -654,6 +712,24 @@ paths:
       tags:
       - playlists
   /playlists/{id}/tracks/{track_id}:
+    delete:
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Track ID
+        in: path
+        name: track_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a track from a playlist
+      tags:
+      - playlists
     put:
       consumes:
       - application/json

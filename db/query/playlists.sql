@@ -17,6 +17,13 @@ FROM playlists
 WHERE id = ?
   AND deleted_at IS NULL;
 
+-- Soft delete playlist
+-- name: SoftDeletePlaylist :execrows
+UPDATE playlists
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE id = ?
+  AND deleted_at IS NULL;
+
 -- Update playlist name
 -- name: UpdatePlaylist :one
 UPDATE playlists

@@ -11,6 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"bottomley.ian/musicserver/internal/db"
+	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 	"bottomley.ian/musicserver/internal/services/scanner"
 )
 
@@ -163,11 +165,20 @@ func (h *Handlers) ScanFolder(w http.ResponseWriter, r *http.Request) {
 		var finishErr error
 		switch {
 		case errors.Is(err, scanner.ErrFolderUnavailable):
-			finishErr = h.App.Queries.FinishFolderScanUnavailable(ctx, err.Error(), id)
+			finishErr = h.App.Queries.FinishFolderScanUnavailable(ctx, db.FinishFolderScanUnavailableParams{
+				LastScanError: dbtypes.NullString{String: err.Error(), Valid: true},
+				ID:            id,
+			})
 		case errors.Is(err, context.Canceled):
-			finishErr = h.App.Queries.FinishFolderScanError(ctx, "scan canceled", id)
+			finishErr = h.App.Queries.FinishFolderScanError(ctx, db.FinishFolderScanErrorParams{
+				LastScanError: dbtypes.NullString{String: "scan canceled", Valid: true},
+				ID:            id,
+			})
 		default:
-			finishErr = h.App.Queries.FinishFolderScanError(ctx, err.Error(), id)
+			finishErr = h.App.Queries.FinishFolderScanError(ctx, db.FinishFolderScanErrorParams{
+				LastScanError: dbtypes.NullString{String: err.Error(), Valid: true},
+				ID:            id,
+			})
 		}
 		if finishErr != nil {
 			log.Printf("failed to record scan failure for folder %d: %v", id, finishErr)

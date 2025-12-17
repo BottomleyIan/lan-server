@@ -17,8 +17,42 @@ type addPlaylistTrackRequest struct {
 	Position *int64 `json:"position,omitempty"`
 }
 
+type enqueuePlaylistTrackRequest struct {
+	TrackID int64 `json:"track_id"`
+}
+
 type updatePlaylistTrackRequest struct {
 	Position int64 `json:"position"`
+}
+
+// ClearPlaylist godoc
+// @Summary Remove all tracks from a playlist
+// @Tags playlists
+// @Param id path int true "Playlist ID"
+// @Success 204
+// @Router /playlists/{id}/clear [post]
+func (h *Handlers) ClearPlaylist(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	playlistID, ok := parseIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	if _, err := h.App.Queries.GetPlaylistByID(r.Context(), playlistID); err != nil {
+		http.Error(w, "playlist not found", http.StatusNotFound)
+		return
+	}
+
+	if err := h.App.Queries.ClearPlaylistTracks(r.Context(), playlistID); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ListPlaylistTracks godoc
@@ -119,6 +153,113 @@ func (h *Handlers) AddPlaylistTrack(w http.ResponseWriter, r *http.Request) {
 
 	trackDTO := trackDTOFromJoinedRow(trackRow)
 	writeJSON(w, playlistTrackDTOFromPT(row, &trackDTO))
+}
+
+// EnqueuePlaylistTrack godoc
+// @Summary Enqueue a track at the end of a playlist
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Param id path int true "Playlist ID"
+// @Param request body enqueuePlaylistTrackRequest true "Track to enqueue"
+// @Success 200 {object} PlaylistTrackDTO
+// @Router /playlists/{id}/enqueue [post]
+func (h *Handlers) EnqueuePlaylistTrack(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	playlistID, ok := parseIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	var body enqueuePlaylistTrackRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	if body.TrackID == 0 {
+		http.Error(w, "track_id required", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := h.App.Queries.GetPlaylistByID(r.Context(), playlistID); err != nil {
+		http.Error(w, "playlist not found", http.StatusNotFound)
+		return
+	}
+	trackRow, err := h.App.Queries.GetTrackWithJoins(r.Context(), body.TrackID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "track not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	next, err := h.App.Queries.NextPlaylistPosition(r.Context(), playlistID)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	row, err := h.App.Queries.AddPlaylistTrack(r.Context(), db.AddPlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    body.TrackID,
+		Position:   next,
+	})
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	trackDTO := trackDTOFromJoinedRow(trackRow)
+	writeJSON(w, playlistTrackDTOFromPT(row, &trackDTO))
+}
+
+// DeletePlaylistTrack godoc
+// @Summary Delete a track from a playlist
+// @Tags playlists
+// @Param id path int true "Playlist ID"
+// @Param track_id path int true "Track ID"
+// @Success 204
+// @Router /playlists/{id}/tracks/{track_id} [delete]
+func (h *Handlers) DeletePlaylistTrack(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	playlistID, ok := parseIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+	trackID, ok := parseIDParam(w, r, "track_id")
+	if !ok {
+		return
+	}
+
+	if _, err := h.App.Queries.GetPlaylistByID(r.Context(), playlistID); err != nil {
+		http.Error(w, "playlist not found", http.StatusNotFound)
+		return
+	}
+
+	affected, err := h.App.Queries.DeletePlaylistTrack(r.Context(), db.DeletePlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    trackID,
+	})
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if affected == 0 {
+		http.Error(w, "playlist track not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // UpdatePlaylistTrack godoc

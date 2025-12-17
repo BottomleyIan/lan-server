@@ -14,6 +14,13 @@ ON CONFLICT(playlist_id, track_id) DO UPDATE SET
   deleted_at = NULL
 RETURNING *;
 
+-- Clear all tracks from playlist
+-- name: ClearPlaylistTracks :exec
+UPDATE playlist_tracks
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE playlist_id = ?
+  AND deleted_at IS NULL;
+
 -- List playlist tracks with track metadata
 -- name: ListPlaylistTracks :many
 SELECT
@@ -31,6 +38,14 @@ WHERE pt.playlist_id = ?
   AND pt.deleted_at IS NULL
   AND t.deleted_at IS NULL
 ORDER BY pt.position;
+
+-- Delete a track from playlist
+-- name: DeletePlaylistTrack :execrows
+UPDATE playlist_tracks
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE playlist_id = ?
+  AND track_id = ?
+  AND deleted_at IS NULL;
 
 -- Update playlist track position
 -- name: UpdatePlaylistTrackPosition :one

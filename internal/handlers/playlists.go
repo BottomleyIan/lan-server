@@ -139,3 +139,43 @@ func (h *Handlers) UpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, playlistDTOFromDB(row))
 }
+
+// DeletePlaylist godoc
+// @Summary Delete playlist
+// @Tags playlists
+// @Param id path int true "Playlist ID"
+// @Success 204
+// @Router /playlists/{id} [delete]
+func (h *Handlers) DeletePlaylist(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	if id <= 0 || id == 1 {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// soft delete playlist
+	affected, err := h.App.Queries.SoftDeletePlaylist(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if affected == 0 {
+		http.Error(w, "playlist not found", http.StatusNotFound)
+		return
+	}
+
+	// clear any tracks; ignore failure, log if needed later
+	_ = h.App.Queries.ClearPlaylistTracks(r.Context(), id)
+
+	w.WriteHeader(http.StatusNoContent)
+}

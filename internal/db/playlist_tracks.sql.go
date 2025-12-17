@@ -40,6 +40,41 @@ func (q *Queries) AddPlaylistTrack(ctx context.Context, arg AddPlaylistTrackPara
 	return i, err
 }
 
+const clearPlaylistTracks = `-- name: ClearPlaylistTracks :exec
+UPDATE playlist_tracks
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+`
+
+// Clear all tracks from playlist
+func (q *Queries) ClearPlaylistTracks(ctx context.Context, playlistID int64) error {
+	_, err := q.db.ExecContext(ctx, clearPlaylistTracks, playlistID)
+	return err
+}
+
+const deletePlaylistTrack = `-- name: DeletePlaylistTrack :execrows
+UPDATE playlist_tracks
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE playlist_id = ?
+  AND track_id = ?
+  AND deleted_at IS NULL
+`
+
+type DeletePlaylistTrackParams struct {
+	PlaylistID int64
+	TrackID    int64
+}
+
+// Delete a track from playlist
+func (q *Queries) DeletePlaylistTrack(ctx context.Context, arg DeletePlaylistTrackParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deletePlaylistTrack, arg.PlaylistID, arg.TrackID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const listPlaylistTracks = `-- name: ListPlaylistTracks :many
 SELECT
   pt.id, pt.playlist_id, pt.track_id, pt.position, pt.deleted_at, pt.created_at, pt.updated_at,
