@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
   body TEXT NULL,
+  tags TEXT NULL,
   status_code TEXT NOT NULL DEFAULT 'BACKLOG',
 
   deleted_at DATETIME NULL,

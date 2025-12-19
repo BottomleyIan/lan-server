@@ -59,6 +59,30 @@ type PlaylistTrack struct {
 	UpdatedAt  time.Time
 }
 
+type Task struct {
+	ID         int64
+	Title      string
+	Body       dbtypes.NullString
+	Tags       dbtypes.NullString
+	StatusCode string
+	DeletedAt  dbtypes.NullTime
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+type TaskStatus struct {
+	Code  string
+	Label string
+}
+
+type TaskTransition struct {
+	ID         int64
+	TaskID     int64
+	StatusCode string
+	Reason     dbtypes.NullString
+	ChangedAt  time.Time
+}
+
 type Track struct {
 	ID           int64
 	FolderID     int64

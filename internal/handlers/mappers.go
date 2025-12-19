@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
 
 	"bottomley.ian/musicserver/internal/db"
+	"bottomley.ian/musicserver/internal/dbtypes"
 )
 
 func folderDTOFromDB(f db.Folder) FolderDTO {
@@ -231,6 +234,78 @@ func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *TrackDTO) PlaylistTrackD
 		UpdatedAt:  pt.UpdatedAt,
 		Track:      trackDTO,
 	}
+}
+
+func taskStatusDTOFromDB(ts db.TaskStatus) TaskStatusDTO {
+	return TaskStatusDTO{
+		Code:  ts.Code,
+		Label: ts.Label,
+	}
+}
+
+func taskStatusesDTOFromDB(rows []db.TaskStatus) []TaskStatusDTO {
+	out := make([]TaskStatusDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, taskStatusDTOFromDB(row))
+	}
+	return out
+}
+
+func taskDTOFromDB(t db.Task) TaskDTO {
+	return TaskDTO{
+		ID:         t.ID,
+		Title:      t.Title,
+		Body:       stringPtrFromNullString(t.Body),
+		Tags:       tagsFromNullString(t.Tags),
+		StatusCode: t.StatusCode,
+		DeletedAt:  timePtrFromNullTime(t.DeletedAt),
+		CreatedAt:  t.CreatedAt,
+		UpdatedAt:  t.UpdatedAt,
+	}
+}
+
+func tasksDTOFromDB(rows []db.Task) []TaskDTO {
+	out := make([]TaskDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, taskDTOFromDB(row))
+	}
+	return out
+}
+
+func taskTransitionDTOFromDB(t db.TaskTransition) TaskTransitionDTO {
+	return TaskTransitionDTO{
+		ID:         t.ID,
+		TaskID:     t.TaskID,
+		StatusCode: t.StatusCode,
+		Reason:     stringPtrFromNullString(t.Reason),
+		ChangedAt:  t.ChangedAt,
+	}
+}
+
+func taskTransitionsDTOFromDB(rows []db.TaskTransition) []TaskTransitionDTO {
+	out := make([]TaskTransitionDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, taskTransitionDTOFromDB(row))
+	}
+	return out
+}
+
+func tagsFromNullString(ns dbtypes.NullString) []string {
+	if !ns.Valid {
+		return nil
+	}
+	raw := strings.TrimSpace(ns.String)
+	if raw == "" {
+		return nil
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(raw), &tags); err != nil {
+		return nil
+	}
+	if len(tags) == 0 {
+		return nil
+	}
+	return tags
 }
 
 func artistSummaryFromArtist(ar db.Artist) *ArtistSummaryDTO {

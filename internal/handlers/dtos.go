@@ -95,3 +95,27 @@ type PlaylistTrackDTO struct {
 	UpdatedAt  time.Time  `json:"updated_at"`
 	Track      *TrackDTO  `json:"track,omitempty"`
 }
+
+type TaskStatusDTO struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
+}
+
+type TaskDTO struct {
+	ID         int64      `json:"id"`
+	Title      string     `json:"title"`
+	Body       *string    `json:"body,omitempty"`
+	Tags       []string   `json:"tags,omitempty"`
+	StatusCode string     `json:"status_code"`
+	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+}
+
+type TaskTransitionDTO struct {
+	ID         int64     `json:"id"`
+	TaskID     int64     `json:"task_id"`
+	StatusCode string    `json:"status_code"`
+	Reason     *string   `json:"reason,omitempty"`
+	ChangedAt  time.Time `json:"changed_at"`
+}
