@@ -282,6 +282,11 @@ definitions:
       title:
         type: string
     type: object
+  handlers.updateTrackImageRequest:
+    properties:
+      url:
+        type: string
+    type: object
   handlers.updateTrackRequest:
     properties:
       rating:
@@ -1106,6 +1111,31 @@ paths:
         "200":
           description: OK
       summary: Get track image
+      tags:
+      - images
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image URL payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateTrackImageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TrackDTO'
+      summary: Update track image from URL
       tags:
       - images
   /tracks/{id}/play:
