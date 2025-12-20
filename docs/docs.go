@@ -1325,6 +1325,47 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tracks/{id}/rating": {
+            "patch": {
+                "description": "Update track rating (1-5) or clear it",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tracks"
+                ],
+                "summary": "Update track rating",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Track ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Track rating payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateTrackRatingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TrackDTO"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1767,6 +1808,14 @@ const docTemplate = `{
             "properties": {
                 "url": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.updateTrackRatingRequest": {
+            "type": "object",
+            "properties": {
+                "rating": {
+                    "type": "integer"
                 }
             }
         },

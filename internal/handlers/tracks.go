@@ -25,6 +25,10 @@ type updateTrackRequest struct {
 	Rating *int64 `json:"rating,omitempty"`
 }
 
+type updateTrackRatingRequest struct {
+	Rating *int64 `json:"rating,omitempty"`
+}
+
 type trackListOptions struct {
 	includeAlbum       bool
 	includeArtist      bool
@@ -140,6 +144,66 @@ func (h *Handlers) UpdateTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body updateTrackRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	var rating dbtypes.NullInt64
+	if body.Rating != nil {
+		if *body.Rating < 1 || *body.Rating > 5 {
+			http.Error(w, "rating must be 1-5", http.StatusBadRequest)
+			return
+		}
+		rating = dbtypes.NullInt64{Int64: *body.Rating, Valid: true}
+	}
+
+	_, err = h.App.Queries.UpdateTrackRating(r.Context(), db.UpdateTrackRatingParams{
+		Rating: rating,
+		ID:     id,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "track not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	updated, err := h.App.Queries.GetTrackWithJoins(r.Context(), id)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, trackDTOFromJoinedRow(updated))
+}
+
+// UpdateTrackRating godoc
+// @Summary Update track rating
+// @Description Update track rating (1-5) or clear it
+// @Tags tracks
+// @Accept json
+// @Produce json
+// @Param id path int true "Track ID"
+// @Param request body updateTrackRatingRequest true "Track rating payload"
+// @Success 200 {object} TrackDTO
+// @Router /tracks/{id}/rating [patch]
+func (h *Handlers) UpdateTrackRating(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var body updateTrackRatingRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return

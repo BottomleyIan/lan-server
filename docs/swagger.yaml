@@ -287,6 +287,11 @@ definitions:
       url:
         type: string
     type: object
+  handlers.updateTrackRatingRequest:
+    properties:
+      rating:
+        type: integer
+    type: object
   handlers.updateTrackRequest:
     properties:
       rating:
@@ -1154,6 +1159,33 @@ paths:
           schema:
             type: file
       summary: Stream a track
+      tags:
+      - tracks
+  /tracks/{id}/rating:
+    patch:
+      consumes:
+      - application/json
+      description: Update track rating (1-5) or clear it
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Track rating payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateTrackRatingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TrackDTO'
+      summary: Update track rating
       tags:
       - tracks
 swagger: "2.0"
