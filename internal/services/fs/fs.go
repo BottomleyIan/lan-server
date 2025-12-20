@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type FS interface {
@@ -50,4 +51,38 @@ func (OSFS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 
 func (OSFS) ReadFile(name string) ([]byte, error) {
 	return os.ReadFile(name)
+}
+
+func ExpandUserPath(path string) (string, error) {
+	if path == "" {
+		return path, nil
+	}
+	if path == "~" || strings.HasPrefix(path, "~"+string(os.PathSeparator)) {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		if path == "~" {
+			return home, nil
+		}
+		return filepath.Join(home, strings.TrimPrefix(path, "~"+string(os.PathSeparator))), nil
+	}
+	return path, nil
+}
+
+func ExpandPath(path string) (string, error) {
+	p := strings.TrimSpace(path)
+	expanded, err := ExpandUserPath(p)
+	if err != nil {
+		return "", err
+	}
+	p = filepath.Clean(expanded)
+	if !filepath.IsAbs(p) {
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return "", err
+		}
+		p = abs
+	}
+	return p, nil
 }

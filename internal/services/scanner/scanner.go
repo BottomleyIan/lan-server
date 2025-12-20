@@ -51,7 +51,7 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 	if err != nil {
 		return err
 	}
-	root, err := expandPath(folder.Path)
+	root, err := myfs.ExpandPath(folder.Path)
 	if err != nil {
 		return err
 	}

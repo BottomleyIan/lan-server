@@ -8,7 +8,6 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -257,8 +256,8 @@ func coverFullPath(rel string) string {
 	if rel == "" {
 		return ""
 	}
-	expanded := expandUserPath(rel)
-	if filepath.IsAbs(expanded) {
+	expanded, err := myfs.ExpandUserPath(rel)
+	if err == nil && filepath.IsAbs(expanded) {
 		return expanded
 	}
 	return filepath.Join("tmp", "covers", rel)
@@ -315,7 +314,11 @@ func trackImagePath(folderPath, relPath, filename, ext string) (string, error) {
 	if folderPath == "" || filename == "" {
 		return "", fmt.Errorf("missing track path")
 	}
-	folderPath = expandUserPath(folderPath)
+	expanded, err := myfs.ExpandUserPath(folderPath)
+	if err != nil {
+		return "", err
+	}
+	folderPath = expanded
 	base := filepath.Base(filename)
 	base = strings.TrimSuffix(base, filepath.Ext(base))
 	if base == "" {
@@ -327,21 +330,4 @@ func trackImagePath(folderPath, relPath, filename, ext string) (string, error) {
 	}
 	destDir := filepath.Join(folderPath, relDir)
 	return filepath.Join(destDir, base+ext), nil
-}
-
-func expandUserPath(path string) string {
-	if path == "" {
-		return path
-	}
-	if path == "~" || strings.HasPrefix(path, "~"+string(os.PathSeparator)) {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return path
-		}
-		if path == "~" {
-			return home
-		}
-		return filepath.Join(home, strings.TrimPrefix(path, "~"+string(os.PathSeparator)))
-	}
-	return path
 }

@@ -16,6 +16,7 @@ import (
 
 	"bottomley.ian/musicserver/internal/db"
 	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
+	myfs "bottomley.ian/musicserver/internal/services/fs"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -358,7 +359,7 @@ func (h *Handlers) serveTrackFile(w http.ResponseWriter, r *http.Request, dispos
 		return
 	}
 
-	basePath, err := expandPath(pathParts.FolderPath)
+	basePath, err := myfs.ExpandPath(pathParts.FolderPath)
 	if err != nil {
 		http.Error(w, "invalid folder path", http.StatusInternalServerError)
 		return
@@ -392,31 +393,4 @@ func (h *Handlers) serveTrackFile(w http.ResponseWriter, r *http.Request, dispos
 		w.Header().Set("Content-Disposition", disposition+"; filename=\""+info.Name()+"\"")
 	}
 	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
-}
-
-// expandPath mirrors scanner's expansion to handle ~ and relative paths.
-func expandPath(p string) (string, error) {
-	p = strings.TrimSpace(p)
-
-	if p == "~" || strings.HasPrefix(p, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		if p == "~" {
-			p = home
-		} else {
-			p = filepath.Join(home, p[2:])
-		}
-	}
-
-	p = filepath.Clean(p)
-	if !filepath.IsAbs(p) {
-		abs, err := filepath.Abs(p)
-		if err != nil {
-			return "", err
-		}
-		p = abs
-	}
-	return p, nil
 }
