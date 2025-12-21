@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 
 	_ "bottomley.ian/musicserver/docs"
 	_ "modernc.org/sqlite"
@@ -52,6 +53,8 @@ func main() {
 	if err := store.ApplyMigrations(sqlite); err != nil {
 		log.Fatal(err)
 	}
+
+	requireFFmpeg()
 
 	a := &app.App{
 		DB:      sqlite,
@@ -146,6 +149,15 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func requireFFmpeg() {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		log.Panic("ffmpeg not installed or not on PATH")
+	}
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		log.Panic("ffprobe not installed or not on PATH")
+	}
 }
 
 func corsAllowAll() func(http.Handler) http.Handler {

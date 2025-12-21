@@ -58,7 +58,7 @@ func (q *Queries) GetPlayableTrackPathPartsByID(ctx context.Context, id int64) (
 }
 
 const getTrackByID = `-- name: GetTrackByID :one
-SELECT id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+SELECT id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, duration_seconds, last_seen_at, deleted_at, created_at, updated_at
 FROM tracks
 WHERE id = ?
   AND deleted_at IS NULL
@@ -83,6 +83,7 @@ func (q *Queries) GetTrackByID(ctx context.Context, id int64) (Track, error) {
 		&i.ImagePath,
 		&i.SizeBytes,
 		&i.LastModified,
+		&i.DurationSeconds,
 		&i.LastSeenAt,
 		&i.DeletedAt,
 		&i.CreatedAt,
@@ -93,7 +94,7 @@ func (q *Queries) GetTrackByID(ctx context.Context, id int64) (Track, error) {
 
 const getTrackWithJoins = `-- name: GetTrackWithJoins :one
 SELECT
-  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
   ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
   al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
   al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
@@ -131,6 +132,7 @@ func (q *Queries) GetTrackWithJoins(ctx context.Context, id int64) (GetTrackWith
 		&i.Track.ImagePath,
 		&i.Track.SizeBytes,
 		&i.Track.LastModified,
+		&i.Track.DurationSeconds,
 		&i.Track.LastSeenAt,
 		&i.Track.DeletedAt,
 		&i.Track.CreatedAt,
@@ -157,7 +159,7 @@ func (q *Queries) GetTrackWithJoins(ctx context.Context, id int64) (GetTrackWith
 }
 
 const listAllIndexedTracks = `-- name: ListAllIndexedTracks :many
-SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
@@ -191,6 +193,7 @@ func (q *Queries) ListAllIndexedTracks(ctx context.Context, prefix interface{}) 
 			&i.ImagePath,
 			&i.SizeBytes,
 			&i.LastModified,
+			&i.DurationSeconds,
 			&i.LastSeenAt,
 			&i.DeletedAt,
 			&i.CreatedAt,
@@ -211,7 +214,7 @@ func (q *Queries) ListAllIndexedTracks(ctx context.Context, prefix interface{}) 
 
 const listAllIndexedTracksWithJoins = `-- name: ListAllIndexedTracksWithJoins :many
 SELECT
-  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
   ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
   al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
   al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
@@ -257,6 +260,7 @@ func (q *Queries) ListAllIndexedTracksWithJoins(ctx context.Context) ([]ListAllI
 			&i.Track.ImagePath,
 			&i.Track.SizeBytes,
 			&i.Track.LastModified,
+			&i.Track.DurationSeconds,
 			&i.Track.LastSeenAt,
 			&i.Track.DeletedAt,
 			&i.Track.CreatedAt,
@@ -293,7 +297,7 @@ func (q *Queries) ListAllIndexedTracksWithJoins(ctx context.Context) ([]ListAllI
 }
 
 const listPlayableTracks = `-- name: ListPlayableTracks :many
-SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
@@ -333,6 +337,7 @@ func (q *Queries) ListPlayableTracks(ctx context.Context, arg ListPlayableTracks
 			&i.ImagePath,
 			&i.SizeBytes,
 			&i.LastModified,
+			&i.DurationSeconds,
 			&i.LastSeenAt,
 			&i.DeletedAt,
 			&i.CreatedAt,
@@ -353,7 +358,7 @@ func (q *Queries) ListPlayableTracks(ctx context.Context, arg ListPlayableTracks
 
 const listPlayableTracksForAlbum = `-- name: ListPlayableTracksForAlbum :many
 SELECT
-  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
   ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
   al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
   al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
@@ -408,6 +413,7 @@ func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, arg ListPlayab
 			&i.Track.ImagePath,
 			&i.Track.SizeBytes,
 			&i.Track.LastModified,
+			&i.Track.DurationSeconds,
 			&i.Track.LastSeenAt,
 			&i.Track.DeletedAt,
 			&i.Track.CreatedAt,
@@ -444,7 +450,7 @@ func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, arg ListPlayab
 }
 
 const listPlayableTracksForAlbumBase = `-- name: ListPlayableTracksForAlbumBase :many
-SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t
 JOIN folders f ON f.id = t.folder_id
 WHERE t.deleted_at IS NULL
@@ -486,6 +492,7 @@ func (q *Queries) ListPlayableTracksForAlbumBase(ctx context.Context, arg ListPl
 			&i.ImagePath,
 			&i.SizeBytes,
 			&i.LastModified,
+			&i.DurationSeconds,
 			&i.LastSeenAt,
 			&i.DeletedAt,
 			&i.CreatedAt,
@@ -506,7 +513,7 @@ func (q *Queries) ListPlayableTracksForAlbumBase(ctx context.Context, arg ListPl
 
 const listPlayableTracksWithJoins = `-- name: ListPlayableTracksWithJoins :many
 SELECT
-  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
   ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
   al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
   al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
@@ -559,6 +566,7 @@ func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context, arg ListPlaya
 			&i.Track.ImagePath,
 			&i.Track.SizeBytes,
 			&i.Track.LastModified,
+			&i.Track.DurationSeconds,
 			&i.Track.LastSeenAt,
 			&i.Track.DeletedAt,
 			&i.Track.CreatedAt,
@@ -595,7 +603,7 @@ func (q *Queries) ListPlayableTracksWithJoins(ctx context.Context, arg ListPlaya
 }
 
 const listTracksForFolder = `-- name: ListTracksForFolder :many
-SELECT id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+SELECT id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, duration_seconds, last_seen_at, deleted_at, created_at, updated_at
 FROM tracks
 WHERE folder_id = ? AND deleted_at IS NULL
 ORDER BY rel_path
@@ -626,6 +634,7 @@ func (q *Queries) ListTracksForFolder(ctx context.Context, folderID int64) ([]Tr
 			&i.ImagePath,
 			&i.SizeBytes,
 			&i.LastModified,
+			&i.DurationSeconds,
 			&i.LastSeenAt,
 			&i.DeletedAt,
 			&i.CreatedAt,
@@ -669,7 +678,7 @@ UPDATE tracks
 SET image_path = ?
 WHERE id = ?
   AND deleted_at IS NULL
-RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, duration_seconds, last_seen_at, deleted_at, created_at, updated_at
 `
 
 type UpdateTrackImagePathParams struct {
@@ -696,6 +705,7 @@ func (q *Queries) UpdateTrackImagePath(ctx context.Context, arg UpdateTrackImage
 		&i.ImagePath,
 		&i.SizeBytes,
 		&i.LastModified,
+		&i.DurationSeconds,
 		&i.LastSeenAt,
 		&i.DeletedAt,
 		&i.CreatedAt,
@@ -706,20 +716,21 @@ func (q *Queries) UpdateTrackImagePath(ctx context.Context, arg UpdateTrackImage
 
 const updateTrackMetadata = `-- name: UpdateTrackMetadata :one
 UPDATE tracks
-SET artist_id = ?, album_id = ?, title = ?, genre = ?, year = ?, image_path = COALESCE(?, image_path)
+SET artist_id = ?, album_id = ?, title = ?, genre = ?, year = ?, image_path = COALESCE(?, image_path), duration_seconds = COALESCE(?, duration_seconds)
 WHERE id = ?
   AND deleted_at IS NULL
-RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, duration_seconds, last_seen_at, deleted_at, created_at, updated_at
 `
 
 type UpdateTrackMetadataParams struct {
-	ArtistID  dbtypes.NullInt64
-	AlbumID   dbtypes.NullInt64
-	Title     string
-	Genre     dbtypes.NullString
-	Year      dbtypes.NullInt64
-	ImagePath dbtypes.NullString
-	ID        int64
+	ArtistID        dbtypes.NullInt64
+	AlbumID         dbtypes.NullInt64
+	Title           string
+	Genre           dbtypes.NullString
+	Year            dbtypes.NullInt64
+	ImagePath       dbtypes.NullString
+	DurationSeconds dbtypes.NullInt64
+	ID              int64
 }
 
 // Update track metadata from tags
@@ -731,6 +742,7 @@ func (q *Queries) UpdateTrackMetadata(ctx context.Context, arg UpdateTrackMetada
 		arg.Genre,
 		arg.Year,
 		arg.ImagePath,
+		arg.DurationSeconds,
 		arg.ID,
 	)
 	var i Track
@@ -749,6 +761,7 @@ func (q *Queries) UpdateTrackMetadata(ctx context.Context, arg UpdateTrackMetada
 		&i.ImagePath,
 		&i.SizeBytes,
 		&i.LastModified,
+		&i.DurationSeconds,
 		&i.LastSeenAt,
 		&i.DeletedAt,
 		&i.CreatedAt,
@@ -762,7 +775,7 @@ UPDATE tracks
 SET rating = ?
 WHERE id = ?
   AND deleted_at IS NULL
-RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, duration_seconds, last_seen_at, deleted_at, created_at, updated_at
 `
 
 type UpdateTrackRatingParams struct {
@@ -789,6 +802,7 @@ func (q *Queries) UpdateTrackRating(ctx context.Context, arg UpdateTrackRatingPa
 		&i.ImagePath,
 		&i.SizeBytes,
 		&i.LastModified,
+		&i.DurationSeconds,
 		&i.LastSeenAt,
 		&i.DeletedAt,
 		&i.CreatedAt,
@@ -811,7 +825,7 @@ ON CONFLICT(folder_id, rel_path) DO UPDATE SET
   last_modified = excluded.last_modified,
   last_seen_at  = CURRENT_TIMESTAMP,
   deleted_at    = NULL
-RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, last_seen_at, deleted_at, created_at, updated_at
+RETURNING id, folder_id, artist_id, album_id, rel_path, title, filename, ext, genre, year, rating, image_path, size_bytes, last_modified, duration_seconds, last_seen_at, deleted_at, created_at, updated_at
 `
 
 type UpsertTrackParams struct {
@@ -852,6 +866,7 @@ func (q *Queries) UpsertTrack(ctx context.Context, arg UpsertTrackParams) (Track
 		&i.ImagePath,
 		&i.SizeBytes,
 		&i.LastModified,
+		&i.DurationSeconds,
 		&i.LastSeenAt,
 		&i.DeletedAt,
 		&i.CreatedAt,

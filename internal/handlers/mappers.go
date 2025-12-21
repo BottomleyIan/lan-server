@@ -85,6 +85,7 @@ func trackDTOFromParts(tk db.Track, artist db.Artist, album db.Album, albumArtis
 		Genre:        stringPtrFromNullString(tk.Genre),
 		Year:         int64PtrFromNullInt64(tk.Year),
 		Rating:       int64PtrFromNullInt64(tk.Rating),
+		DurationSec:  int64PtrFromNullInt64(tk.DurationSeconds),
 		ImagePath:    stringPtrFromNullString(tk.ImagePath),
 		SizeBytes:    tk.SizeBytes,
 		LastModified: tk.LastModified,

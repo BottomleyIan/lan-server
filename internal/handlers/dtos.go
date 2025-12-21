@@ -29,6 +29,7 @@ type TrackDTO struct {
 	Genre        *string           `json:"genre,omitempty"`
 	Year         *int64            `json:"year,omitempty"`
 	Rating       *int64            `json:"rating,omitempty"`
+	DurationSec  *int64            `json:"duration_seconds,omitempty"`
 	ImagePath    *string           `json:"image_path,omitempty"`
 	SizeBytes    int64             `json:"size_bytes"`
 	LastModified int64             `json:"last_modified"`

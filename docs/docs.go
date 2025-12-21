@@ -1646,6 +1646,9 @@ const docTemplate = `{
                 "deleted_at": {
                     "type": "string"
                 },
+                "duration_seconds": {
+                    "type": "integer"
+                },
                 "ext": {
                     "type": "string"
                 },

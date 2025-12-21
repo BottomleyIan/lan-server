@@ -130,15 +130,20 @@ func (s *Scanner) ScanFolder(ctx context.Context, folderID int64) error {
 		if t := strings.TrimSpace(metadata.Title); t != "" {
 			title = t
 		}
+		var durationSeconds dbtypes.NullInt64
+		if metadata.DurationSeconds != nil {
+			durationSeconds = dbtypes.NullInt64{Int64: *metadata.DurationSeconds, Valid: true}
+		}
 
 		_, err = s.Q.UpdateTrackMetadata(ctx, db.UpdateTrackMetadataParams{
-			ArtistID:  artistID,
-			AlbumID:   albumID,
-			Title:     title,
-			Genre:     genre,
-			Year:      year,
-			ImagePath: dbtypes.NullString{},
-			ID:        track.ID,
+			ArtistID:        artistID,
+			AlbumID:         albumID,
+			Title:           title,
+			Genre:           genre,
+			Year:            year,
+			ImagePath:       dbtypes.NullString{},
+			DurationSeconds: durationSeconds,
+			ID:              track.ID,
 		})
 		if err != nil {
 			return err

@@ -84,22 +84,23 @@ type TaskTransition struct {
 }
 
 type Track struct {
-	ID           int64
-	FolderID     int64
-	ArtistID     dbtypes.NullInt64
-	AlbumID      dbtypes.NullInt64
-	RelPath      string
-	Title        string
-	Filename     string
-	Ext          string
-	Genre        dbtypes.NullString
-	Year         dbtypes.NullInt64
-	Rating       dbtypes.NullInt64
-	ImagePath    dbtypes.NullString
-	SizeBytes    int64
-	LastModified int64
-	LastSeenAt   time.Time
-	DeletedAt    dbtypes.NullTime
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID              int64
+	FolderID        int64
+	ArtistID        dbtypes.NullInt64
+	AlbumID         dbtypes.NullInt64
+	RelPath         string
+	Title           string
+	Filename        string
+	Ext             string
+	Genre           dbtypes.NullString
+	Year            dbtypes.NullInt64
+	Rating          dbtypes.NullInt64
+	ImagePath       dbtypes.NullString
+	SizeBytes       int64
+	LastModified    int64
+	DurationSeconds dbtypes.NullInt64
+	LastSeenAt      time.Time
+	DeletedAt       dbtypes.NullTime
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }

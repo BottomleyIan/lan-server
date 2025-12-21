@@ -1,16 +1,15 @@
 package scanner
 
 import (
-	//"errors"
-	//"path/filepath"
-	//"strings"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"math"
+	"strconv"
 
 	"github.com/dhowden/tag"
-	//"github.com/mewkiz/flac"
-	//"github.com/mewkiz/flac/meta"
-	//"github.com/bogem/id3v2"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
 type Picture struct {
@@ -27,7 +26,8 @@ type Metadata struct {
 	Year   int
 	Track  int
 
-	Picture *Picture
+	DurationSeconds *int64
+	Picture         *Picture
 }
 
 func (s *Scanner) ReadMetadata(path string) (Metadata, error) {
@@ -63,6 +63,12 @@ func (s *Scanner) ReadMetadata(path string) (Metadata, error) {
 			}
 		}
 	}
+	durationSeconds, err := probeDurationSeconds(path)
+	if err != nil {
+		log.Printf("warn: ffprobe failed for %s: %v", path, err)
+		return out, nil
+	}
+	out.DurationSeconds = durationSeconds
 	/*
 		// 2) If picture missing, try format-specific fallback
 		if out.Picture == nil {
@@ -84,6 +90,38 @@ func (s *Scanner) ReadMetadata(path string) (Metadata, error) {
 		return out, err
 	}
 	return out, nil
+}
+
+type ffprobeOutput struct {
+	Format struct {
+		Duration string `json:"duration"`
+	} `json:"format"`
+}
+
+func probeDurationSeconds(path string) (*int64, error) {
+	raw, err := ffmpeg.Probe(path)
+	if err != nil {
+		return nil, err
+	}
+	var parsed ffprobeOutput
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil, err
+	}
+	if parsed.Format.Duration == "" {
+		return nil, nil
+	}
+	secondsFloat, err := strconv.ParseFloat(parsed.Format.Duration, 64)
+	if err != nil {
+		return nil, err
+	}
+	if secondsFloat < 0 {
+		return nil, nil
+	}
+	seconds := int64(math.Round(secondsFloat))
+	if seconds <= 0 {
+		return nil, nil
+	}
+	return &seconds, nil
 }
 
 /*

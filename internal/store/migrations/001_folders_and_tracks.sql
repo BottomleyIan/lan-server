@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS tracks (
 
   size_bytes INTEGER NOT NULL,
   last_modified INTEGER NOT NULL,   -- unix seconds since epoch
+  duration_seconds INTEGER NULL CHECK (duration_seconds >= 0),
 
   -- last time this file was seen during scanning
   last_seen_at DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP),
