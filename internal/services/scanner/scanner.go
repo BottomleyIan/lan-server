@@ -250,6 +250,9 @@ func (s *Scanner) findAlbumImageFile(dir string) (string, error) {
 		if e.IsDir() {
 			continue
 		}
+		if strings.HasPrefix(e.Name(), "._") {
+			continue
+		}
 		ext := strings.ToLower(filepath.Ext(e.Name()))
 		switch ext {
 		case ".jpg", ".jpeg", ".png":
