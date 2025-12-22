@@ -51,7 +51,7 @@ WHERE playlist_id = ?
 -- name: UpdatePlaylistTrackPosition :one
 UPDATE playlist_tracks
 SET position = ?
-WHERE id = ?
-  AND playlist_id = ?
+WHERE playlist_id = ?
+  AND track_id = ?
   AND deleted_at IS NULL
 RETURNING *;

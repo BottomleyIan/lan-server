@@ -834,7 +834,7 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Playlist Track ID
+      - description: Track ID
         in: path
         name: track_id
         required: true

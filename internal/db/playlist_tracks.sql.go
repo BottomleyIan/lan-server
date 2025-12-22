@@ -187,21 +187,21 @@ func (q *Queries) NextPlaylistPosition(ctx context.Context, playlistID int64) (i
 const updatePlaylistTrackPosition = `-- name: UpdatePlaylistTrackPosition :one
 UPDATE playlist_tracks
 SET position = ?
-WHERE id = ?
-  AND playlist_id = ?
+WHERE playlist_id = ?
+  AND track_id = ?
   AND deleted_at IS NULL
 RETURNING id, playlist_id, track_id, position, deleted_at, created_at, updated_at
 `
 
 type UpdatePlaylistTrackPositionParams struct {
 	Position   int64
-	ID         int64
 	PlaylistID int64
+	TrackID    int64
 }
 
 // Update playlist track position
 func (q *Queries) UpdatePlaylistTrackPosition(ctx context.Context, arg UpdatePlaylistTrackPositionParams) (PlaylistTrack, error) {
-	row := q.db.QueryRowContext(ctx, updatePlaylistTrackPosition, arg.Position, arg.ID, arg.PlaylistID)
+	row := q.db.QueryRowContext(ctx, updatePlaylistTrackPosition, arg.Position, arg.PlaylistID, arg.TrackID)
 	var i PlaylistTrack
 	err := row.Scan(
 		&i.ID,

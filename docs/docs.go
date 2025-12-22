@@ -802,7 +802,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Playlist Track ID",
+                        "description": "Track ID",
                         "name": "track_id",
                         "in": "path",
                         "required": true

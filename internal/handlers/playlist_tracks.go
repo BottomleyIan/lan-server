@@ -268,7 +268,7 @@ func (h *Handlers) DeletePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Playlist ID"
-// @Param track_id path int true "Playlist Track ID"
+// @Param track_id path int true "Track ID"
 // @Param request body updatePlaylistTrackRequest true "New position"
 // @Success 200 {object} PlaylistTrackDTO
 // @Router /playlists/{id}/tracks/{track_id} [put]
@@ -282,7 +282,7 @@ func (h *Handlers) UpdatePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ptID, ok := parseIDParam(w, r, "track_id")
+	trackID, ok := parseIDParam(w, r, "track_id")
 	if !ok {
 		return
 	}
@@ -292,15 +292,15 @@ func (h *Handlers) UpdatePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
-	if body.Position <= 0 {
-		http.Error(w, "position must be > 0", http.StatusBadRequest)
+	if body.Position < 0 {
+		http.Error(w, "position must be >= 0", http.StatusBadRequest)
 		return
 	}
 
 	row, err := h.App.Queries.UpdatePlaylistTrackPosition(r.Context(), db.UpdatePlaylistTrackPositionParams{
 		Position:   body.Position,
-		ID:         ptID,
 		PlaylistID: playlistID,
+		TrackID:    trackID,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
