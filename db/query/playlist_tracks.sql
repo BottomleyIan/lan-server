@@ -1,6 +1,21 @@
 -- Next position for playlist
 -- name: NextPlaylistPosition :one
-SELECT COALESCE(MAX(position), 0) + 1
+SELECT COALESCE(MAX(position), -1) + 1
+FROM playlist_tracks
+WHERE playlist_id = ?
+  AND deleted_at IS NULL;
+
+-- Get playlist track by playlist+track
+-- name: GetPlaylistTrack :one
+SELECT *
+FROM playlist_tracks
+WHERE playlist_id = ?
+  AND track_id = ?
+  AND deleted_at IS NULL;
+
+-- Count playlist tracks
+-- name: CountPlaylistTracks :one
+SELECT COUNT(*)
 FROM playlist_tracks
 WHERE playlist_id = ?
   AND deleted_at IS NULL;
@@ -19,6 +34,48 @@ RETURNING *;
 UPDATE playlist_tracks
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE playlist_id = ?
+  AND deleted_at IS NULL;
+
+-- Shift playlist track positions up from a position (inclusive)
+-- name: ShiftPlaylistTrackPositionsUpFrom :exec
+UPDATE playlist_tracks
+SET position = position + 1
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+  AND position >= ?;
+
+-- Shift playlist track positions down within a range (exclusive/inclusive)
+-- name: ShiftPlaylistTrackPositionsDownRange :exec
+UPDATE playlist_tracks
+SET position = position - 1
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+  AND position > ?
+  AND position <= ?;
+
+-- Shift playlist track positions up within a range (inclusive/exclusive)
+-- name: ShiftPlaylistTrackPositionsUpRange :exec
+UPDATE playlist_tracks
+SET position = position + 1
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+  AND position >= ?
+  AND position < ?;
+
+-- List playlist track IDs in position order
+-- name: ListPlaylistTrackIDs :many
+SELECT track_id
+FROM playlist_tracks
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+ORDER BY position, id;
+
+-- Update playlist track position without returning row
+-- name: UpdatePlaylistTrackPositionNoReturn :exec
+UPDATE playlist_tracks
+SET position = ?
+WHERE playlist_id = ?
+  AND track_id = ?
   AND deleted_at IS NULL;
 
 -- List playlist tracks with track metadata

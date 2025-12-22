@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -121,32 +122,140 @@ func (h *Handlers) AddPlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "playlist not found", http.StatusNotFound)
 		return
 	}
-	trackRow, err := h.App.Queries.GetTrackWithJoins(r.Context(), body.TrackID)
+
+	tx, err := h.App.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	queries := h.App.Queries.WithTx(tx)
+
+	trackRow, err := queries.GetTrackWithJoins(r.Context(), body.TrackID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			_ = tx.Rollback()
 			http.Error(w, "track not found", http.StatusNotFound)
 		} else {
+			_ = tx.Rollback()
 			http.Error(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	position := body.Position
-	if position == nil {
-		next, err := h.App.Queries.NextPlaylistPosition(r.Context(), playlistID)
-		if err != nil {
+	existing, err := queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    body.TrackID,
+	})
+	exists := err == nil
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	count, err := queries.CountPlaylistTracks(r.Context(), playlistID)
+	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	var desired int64
+	if body.Position != nil {
+		desired = *body.Position
+	} else {
+		if exists {
+			desired = count - 1
+		} else {
+			desired = count
+		}
+	}
+	if desired < 0 {
+		_ = tx.Rollback()
+		http.Error(w, "position must be >= 0", http.StatusBadRequest)
+		return
+	}
+
+	var row db.PlaylistTrack
+	if exists {
+		maxPos := count - 1
+		if desired > maxPos {
+			desired = maxPos
+		}
+		if desired != existing.Position {
+			if desired > existing.Position {
+				if err := queries.ShiftPlaylistTrackPositionsDownRange(r.Context(), db.ShiftPlaylistTrackPositionsDownRangeParams{
+					PlaylistID: playlistID,
+					Position:   existing.Position,
+					Position_2: desired,
+				}); err != nil {
+					_ = tx.Rollback()
+					http.Error(w, "internal error", http.StatusInternalServerError)
+					return
+				}
+			} else {
+				if err := queries.ShiftPlaylistTrackPositionsUpRange(r.Context(), db.ShiftPlaylistTrackPositionsUpRangeParams{
+					PlaylistID: playlistID,
+					Position:   desired,
+					Position_2: existing.Position,
+				}); err != nil {
+					_ = tx.Rollback()
+					http.Error(w, "internal error", http.StatusInternalServerError)
+					return
+				}
+			}
+			row, err = queries.UpdatePlaylistTrackPosition(r.Context(), db.UpdatePlaylistTrackPositionParams{
+				Position:   desired,
+				PlaylistID: playlistID,
+				TrackID:    body.TrackID,
+			})
+			if err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			row = existing
+		}
+	} else {
+		if desired > count {
+			desired = count
+		}
+		if err := queries.ShiftPlaylistTrackPositionsUpFrom(r.Context(), db.ShiftPlaylistTrackPositionsUpFromParams{
+			PlaylistID: playlistID,
+			Position:   desired,
+		}); err != nil {
+			_ = tx.Rollback()
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		position = &next
+		row, err = queries.AddPlaylistTrack(r.Context(), db.AddPlaylistTrackParams{
+			PlaylistID: playlistID,
+			TrackID:    body.TrackID,
+			Position:   desired,
+		})
+		if err != nil {
+			_ = tx.Rollback()
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
 	}
 
-	row, err := h.App.Queries.AddPlaylistTrack(r.Context(), db.AddPlaylistTrackParams{
+	if err := normalizePlaylistPositions(r.Context(), queries, playlistID); err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	row, err = queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
 		PlaylistID: playlistID,
 		TrackID:    body.TrackID,
-		Position:   *position,
 	})
 	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -189,28 +298,98 @@ func (h *Handlers) EnqueuePlaylistTrack(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "playlist not found", http.StatusNotFound)
 		return
 	}
-	trackRow, err := h.App.Queries.GetTrackWithJoins(r.Context(), body.TrackID)
+
+	tx, err := h.App.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	queries := h.App.Queries.WithTx(tx)
+
+	trackRow, err := queries.GetTrackWithJoins(r.Context(), body.TrackID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			_ = tx.Rollback()
 			http.Error(w, "track not found", http.StatusNotFound)
 		} else {
+			_ = tx.Rollback()
 			http.Error(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	next, err := h.App.Queries.NextPlaylistPosition(r.Context(), playlistID)
-	if err != nil {
+	existing, err := queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    body.TrackID,
+	})
+	exists := err == nil
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		_ = tx.Rollback()
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	row, err := h.App.Queries.AddPlaylistTrack(r.Context(), db.AddPlaylistTrackParams{
+	count, err := queries.CountPlaylistTracks(r.Context(), playlistID)
+	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	var row db.PlaylistTrack
+	if exists {
+		desired := count - 1
+		if desired != existing.Position {
+			if err := queries.ShiftPlaylistTrackPositionsDownRange(r.Context(), db.ShiftPlaylistTrackPositionsDownRangeParams{
+				PlaylistID: playlistID,
+				Position:   existing.Position,
+				Position_2: desired,
+			}); err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			row, err = queries.UpdatePlaylistTrackPosition(r.Context(), db.UpdatePlaylistTrackPositionParams{
+				Position:   desired,
+				PlaylistID: playlistID,
+				TrackID:    body.TrackID,
+			})
+			if err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			row = existing
+		}
+	} else {
+		row, err = queries.AddPlaylistTrack(r.Context(), db.AddPlaylistTrackParams{
+			PlaylistID: playlistID,
+			TrackID:    body.TrackID,
+			Position:   count,
+		})
+		if err != nil {
+			_ = tx.Rollback()
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if err := normalizePlaylistPositions(r.Context(), queries, playlistID); err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	row, err = queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
 		PlaylistID: playlistID,
 		TrackID:    body.TrackID,
-		Position:   next,
 	})
 	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -246,16 +425,48 @@ func (h *Handlers) DeletePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	affected, err := h.App.Queries.DeletePlaylistTrack(r.Context(), db.DeletePlaylistTrackParams{
-		PlaylistID: playlistID,
-		TrackID:    trackID,
-	})
+	tx, err := h.App.DB.BeginTx(r.Context(), nil)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	queries := h.App.Queries.WithTx(tx)
+
+	if _, err := queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    trackID,
+	}); err != nil {
+		_ = tx.Rollback()
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "playlist track not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	affected, err := queries.DeletePlaylistTrack(r.Context(), db.DeletePlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    trackID,
+	})
+	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 	if affected == 0 {
+		_ = tx.Rollback()
 		http.Error(w, "playlist track not found", http.StatusNotFound)
+		return
+	}
+
+	if err := normalizePlaylistPositions(r.Context(), queries, playlistID); err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -297,16 +508,89 @@ func (h *Handlers) UpdatePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := h.App.Queries.UpdatePlaylistTrackPosition(r.Context(), db.UpdatePlaylistTrackPositionParams{
-		Position:   body.Position,
+	tx, err := h.App.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	queries := h.App.Queries.WithTx(tx)
+
+	existing, err := queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
 		PlaylistID: playlistID,
 		TrackID:    trackID,
 	})
 	if err != nil {
+		_ = tx.Rollback()
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "playlist track not found", http.StatusNotFound)
 			return
 		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	count, err := queries.CountPlaylistTracks(r.Context(), playlistID)
+	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	maxPos := count - 1
+	desired := body.Position
+	if desired > maxPos {
+		desired = maxPos
+	}
+
+	row := existing
+	if desired != existing.Position {
+		if desired > existing.Position {
+			if err := queries.ShiftPlaylistTrackPositionsDownRange(r.Context(), db.ShiftPlaylistTrackPositionsDownRangeParams{
+				PlaylistID: playlistID,
+				Position:   existing.Position,
+				Position_2: desired,
+			}); err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			if err := queries.ShiftPlaylistTrackPositionsUpRange(r.Context(), db.ShiftPlaylistTrackPositionsUpRangeParams{
+				PlaylistID: playlistID,
+				Position:   desired,
+				Position_2: existing.Position,
+			}); err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		}
+		row, err = queries.UpdatePlaylistTrackPosition(r.Context(), db.UpdatePlaylistTrackPositionParams{
+			Position:   desired,
+			PlaylistID: playlistID,
+			TrackID:    trackID,
+		})
+		if err != nil {
+			_ = tx.Rollback()
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if err := normalizePlaylistPositions(r.Context(), queries, playlistID); err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	row, err = queries.GetPlaylistTrack(r.Context(), db.GetPlaylistTrackParams{
+		PlaylistID: playlistID,
+		TrackID:    trackID,
+	})
+	if err != nil {
+		_ = tx.Rollback()
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -334,4 +618,21 @@ func parseIDParam(w http.ResponseWriter, r *http.Request, name string) (int64, b
 		return 0, false
 	}
 	return id, true
+}
+
+func normalizePlaylistPositions(ctx context.Context, queries *db.Queries, playlistID int64) error {
+	ids, err := queries.ListPlaylistTrackIDs(ctx, playlistID)
+	if err != nil {
+		return err
+	}
+	for idx, trackID := range ids {
+		if err := queries.UpdatePlaylistTrackPositionNoReturn(ctx, db.UpdatePlaylistTrackPositionNoReturnParams{
+			Position:   int64(idx),
+			PlaylistID: playlistID,
+			TrackID:    trackID,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

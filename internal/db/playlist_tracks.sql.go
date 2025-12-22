@@ -53,6 +53,21 @@ func (q *Queries) ClearPlaylistTracks(ctx context.Context, playlistID int64) err
 	return err
 }
 
+const countPlaylistTracks = `-- name: CountPlaylistTracks :one
+SELECT COUNT(*)
+FROM playlist_tracks
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+`
+
+// Count playlist tracks
+func (q *Queries) CountPlaylistTracks(ctx context.Context, playlistID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPlaylistTracks, playlistID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deletePlaylistTrack = `-- name: DeletePlaylistTrack :execrows
 UPDATE playlist_tracks
 SET deleted_at = CURRENT_TIMESTAMP
@@ -73,6 +88,67 @@ func (q *Queries) DeletePlaylistTrack(ctx context.Context, arg DeletePlaylistTra
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+const getPlaylistTrack = `-- name: GetPlaylistTrack :one
+SELECT id, playlist_id, track_id, position, deleted_at, created_at, updated_at
+FROM playlist_tracks
+WHERE playlist_id = ?
+  AND track_id = ?
+  AND deleted_at IS NULL
+`
+
+type GetPlaylistTrackParams struct {
+	PlaylistID int64
+	TrackID    int64
+}
+
+// Get playlist track by playlist+track
+func (q *Queries) GetPlaylistTrack(ctx context.Context, arg GetPlaylistTrackParams) (PlaylistTrack, error) {
+	row := q.db.QueryRowContext(ctx, getPlaylistTrack, arg.PlaylistID, arg.TrackID)
+	var i PlaylistTrack
+	err := row.Scan(
+		&i.ID,
+		&i.PlaylistID,
+		&i.TrackID,
+		&i.Position,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listPlaylistTrackIDs = `-- name: ListPlaylistTrackIDs :many
+SELECT track_id
+FROM playlist_tracks
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+ORDER BY position, id
+`
+
+// List playlist track IDs in position order
+func (q *Queries) ListPlaylistTrackIDs(ctx context.Context, playlistID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listPlaylistTrackIDs, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var track_id int64
+		if err := rows.Scan(&track_id); err != nil {
+			return nil, err
+		}
+		items = append(items, track_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPlaylistTracks = `-- name: ListPlaylistTracks :many
@@ -170,7 +246,7 @@ func (q *Queries) ListPlaylistTracks(ctx context.Context, playlistID int64) ([]L
 }
 
 const nextPlaylistPosition = `-- name: NextPlaylistPosition :one
-SELECT COALESCE(MAX(position), 0) + 1
+SELECT COALESCE(MAX(position), -1) + 1
 FROM playlist_tracks
 WHERE playlist_id = ?
   AND deleted_at IS NULL
@@ -182,6 +258,67 @@ func (q *Queries) NextPlaylistPosition(ctx context.Context, playlistID int64) (i
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const shiftPlaylistTrackPositionsDownRange = `-- name: ShiftPlaylistTrackPositionsDownRange :exec
+UPDATE playlist_tracks
+SET position = position - 1
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+  AND position > ?
+  AND position <= ?
+`
+
+type ShiftPlaylistTrackPositionsDownRangeParams struct {
+	PlaylistID int64
+	Position   int64
+	Position_2 int64
+}
+
+// Shift playlist track positions down within a range (exclusive/inclusive)
+func (q *Queries) ShiftPlaylistTrackPositionsDownRange(ctx context.Context, arg ShiftPlaylistTrackPositionsDownRangeParams) error {
+	_, err := q.db.ExecContext(ctx, shiftPlaylistTrackPositionsDownRange, arg.PlaylistID, arg.Position, arg.Position_2)
+	return err
+}
+
+const shiftPlaylistTrackPositionsUpFrom = `-- name: ShiftPlaylistTrackPositionsUpFrom :exec
+UPDATE playlist_tracks
+SET position = position + 1
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+  AND position >= ?
+`
+
+type ShiftPlaylistTrackPositionsUpFromParams struct {
+	PlaylistID int64
+	Position   int64
+}
+
+// Shift playlist track positions up from a position (inclusive)
+func (q *Queries) ShiftPlaylistTrackPositionsUpFrom(ctx context.Context, arg ShiftPlaylistTrackPositionsUpFromParams) error {
+	_, err := q.db.ExecContext(ctx, shiftPlaylistTrackPositionsUpFrom, arg.PlaylistID, arg.Position)
+	return err
+}
+
+const shiftPlaylistTrackPositionsUpRange = `-- name: ShiftPlaylistTrackPositionsUpRange :exec
+UPDATE playlist_tracks
+SET position = position + 1
+WHERE playlist_id = ?
+  AND deleted_at IS NULL
+  AND position >= ?
+  AND position < ?
+`
+
+type ShiftPlaylistTrackPositionsUpRangeParams struct {
+	PlaylistID int64
+	Position   int64
+	Position_2 int64
+}
+
+// Shift playlist track positions up within a range (inclusive/exclusive)
+func (q *Queries) ShiftPlaylistTrackPositionsUpRange(ctx context.Context, arg ShiftPlaylistTrackPositionsUpRangeParams) error {
+	_, err := q.db.ExecContext(ctx, shiftPlaylistTrackPositionsUpRange, arg.PlaylistID, arg.Position, arg.Position_2)
+	return err
 }
 
 const updatePlaylistTrackPosition = `-- name: UpdatePlaylistTrackPosition :one
@@ -213,4 +350,24 @@ func (q *Queries) UpdatePlaylistTrackPosition(ctx context.Context, arg UpdatePla
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updatePlaylistTrackPositionNoReturn = `-- name: UpdatePlaylistTrackPositionNoReturn :exec
+UPDATE playlist_tracks
+SET position = ?
+WHERE playlist_id = ?
+  AND track_id = ?
+  AND deleted_at IS NULL
+`
+
+type UpdatePlaylistTrackPositionNoReturnParams struct {
+	Position   int64
+	PlaylistID int64
+	TrackID    int64
+}
+
+// Update playlist track position without returning row
+func (q *Queries) UpdatePlaylistTrackPositionNoReturn(ctx context.Context, arg UpdatePlaylistTrackPositionNoReturnParams) error {
+	_, err := q.db.ExecContext(ctx, updatePlaylistTrackPositionNoReturn, arg.Position, arg.PlaylistID, arg.TrackID)
+	return err
 }
