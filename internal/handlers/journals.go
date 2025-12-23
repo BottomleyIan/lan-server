@@ -47,8 +47,8 @@ type createLogseqTaskRequest struct {
 	Status    string   `json:"status" example:"TODO"`
 	Tags      []string `json:"tags,omitempty" example:"tag1,tag2"`
 	Desc      string   `json:"description" example:"Write release notes"`
-	Deadline  *string  `json:"deadline,omitempty" example:"2025-12-23 Tue 17:00"`
-	Scheduled *string  `json:"scheduled,omitempty" example:"2025-12-23 Tue 11:00"`
+	Deadline  *string  `json:"deadline,omitempty" example:"2025-12-23"`
+	Scheduled *string  `json:"scheduled,omitempty" example:"2025-12-23T11:00:00Z"`
 	Body      *string  `json:"body,omitempty" example:"Include the new journals endpoints."`
 }
 

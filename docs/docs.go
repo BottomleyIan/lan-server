@@ -1893,7 +1893,7 @@ const docTemplate = `{
                 },
                 "deadline": {
                     "type": "string",
-                    "example": "2025-12-23 Tue 17:00"
+                    "example": "2025-12-23"
                 },
                 "description": {
                     "type": "string",
@@ -1901,7 +1901,7 @@ const docTemplate = `{
                 },
                 "scheduled": {
                     "type": "string",
-                    "example": "2025-12-23 Tue 11:00"
+                    "example": "2025-12-23T11:00:00Z"
                 },
                 "status": {
                     "type": "string",
