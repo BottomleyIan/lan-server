@@ -111,6 +111,25 @@ WHERE t.deleted_at IS NULL
   AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
 ORDER BY t.rel_path;
 
+-- List playable tracks for an artist (roots currently available)
+-- name: ListPlayableTracksForArtist :many
+SELECT
+  sqlc.embed(t),
+  sqlc.embed(ar),
+  sqlc.embed(al),
+  sqlc.embed(al_ar)
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND (?1 = 1 OR f.available = 1)
+  AND t.artist_id = ?2
+  AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
+ORDER BY t.rel_path;
+
 -- Include unavailable roots too (for admin/debug UI) with artist/album info
 -- name: ListAllIndexedTracksWithJoins :many
 SELECT
@@ -136,6 +155,18 @@ WHERE t.deleted_at IS NULL
   AND f.deleted_at IS NULL
   AND (?1 = 1 OR f.available = 1)
   AND t.album_id = ?2
+  AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
+ORDER BY t.rel_path;
+
+-- List playable tracks for an artist without joins (roots currently available)
+-- name: ListPlayableTracksForArtistBase :many
+SELECT t.*
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND (?1 = 1 OR f.available = 1)
+  AND t.artist_id = ?2
   AND (?3 IS NULL OR t.filename LIKE (?3 || '%'))
 ORDER BY t.rel_path;
 

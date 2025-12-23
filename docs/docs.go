@@ -1199,6 +1199,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "Filter by artist ID",
+                        "name": "artistId",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "album",
                             "artist"

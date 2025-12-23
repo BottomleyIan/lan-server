@@ -50,6 +50,7 @@ var (
 // @Tags tracks
 // @Produce json
 // @Param albumId query int false "Filter by album ID"
+// @Param artistId query int false "Filter by artist ID"
 // @Param expand query string false "Comma-separated expansions (album,artist); defaults to none" Enums(album,artist) example(album,artist)
 // @Param startswith query string false "Prefix filter on filename"
 // @Param include_unavailable query bool false "Include tracks from unavailable folders (default: false)"
@@ -78,7 +79,22 @@ func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
 		albumID = &id
 	}
 
-	tracks, err := h.listTracksShared(r.Context(), albumID, opts)
+	artistIDStr := r.URL.Query().Get("artistId")
+	var artistID *int64
+	if artistIDStr != "" {
+		id, err := strconv.ParseInt(artistIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "invalid artistId", http.StatusBadRequest)
+			return
+		}
+		artistID = &id
+	}
+	if albumID != nil && artistID != nil {
+		http.Error(w, "albumId and artistId are mutually exclusive", http.StatusBadRequest)
+		return
+	}
+
+	tracks, err := h.listTracksShared(r.Context(), albumID, artistID, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -240,7 +256,7 @@ func (h *Handlers) UpdateTrackRating(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, trackDTOFromJoinedRow(updated))
 }
 
-func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts trackListOptions) ([]TrackDTO, error) {
+func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, artistID *int64, opts trackListOptions) ([]TrackDTO, error) {
 	prefix := nullStringFromPrefix(opts.startsWith)
 	includeUnavailable := int64(0)
 	if opts.includeUnavailable {
@@ -264,6 +280,30 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, opts tr
 			Column1: includeUnavailable,
 			AlbumID: dbtypes.NullInt64{Int64: *albumID, Valid: true},
 			Column3: prefix,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return tracksDTOFromBase(rows), nil
+	}
+
+	if artistID != nil {
+		if opts.includeAlbum || opts.includeArtist {
+			rows, err := h.App.Queries.ListPlayableTracksForArtist(ctx, db.ListPlayableTracksForArtistParams{
+				Column1:  includeUnavailable,
+				ArtistID: dbtypes.NullInt64{Int64: *artistID, Valid: true},
+				Column3:  prefix,
+			})
+			if err != nil {
+				return nil, err
+			}
+			return tracksDTOFromPlayableRows(rows), nil
+		}
+
+		rows, err := h.App.Queries.ListPlayableTracksForArtistBase(ctx, db.ListPlayableTracksForArtistBaseParams{
+			Column1:  includeUnavailable,
+			ArtistID: dbtypes.NullInt64{Int64: *artistID, Valid: true},
+			Column3:  prefix,
 		})
 		if err != nil {
 			return nil, err

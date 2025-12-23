@@ -1128,6 +1128,10 @@ paths:
         in: query
         name: albumId
         type: integer
+      - description: Filter by artist ID
+        in: query
+        name: artistId
+        type: integer
       - description: Comma-separated expansions (album,artist); defaults to none
         enum:
         - album
