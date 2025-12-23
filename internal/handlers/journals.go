@@ -657,7 +657,37 @@ func formatLogseqTimestamp(value string) string {
 	if strings.HasPrefix(trimmed, "<") && strings.HasSuffix(trimmed, ">") {
 		return trimmed
 	}
+	if formatted, ok := toLogseqTimestamp(trimmed); ok {
+		return "<" + formatted + ">"
+	}
 	return "<" + trimmed + ">"
+}
+
+func toLogseqTimestamp(value string) (string, bool) {
+	if ts, ok := parseISODateTime(value); ok {
+		local := ts.In(time.Local)
+		return local.Format("2006-01-02 Mon 15:04"), true
+	}
+	if date, ok := parseISODate(value); ok {
+		return date.Format("2006-01-02 Mon"), true
+	}
+	return "", false
+}
+
+func parseISODateTime(value string) (time.Time, bool) {
+	ts, err := time.Parse(time.RFC3339Nano, value)
+	if err == nil {
+		return ts, true
+	}
+	return time.Time{}, false
+}
+
+func parseISODate(value string) (time.Time, bool) {
+	ts, err := time.Parse("2006-01-02", value)
+	if err == nil {
+		return ts, true
+	}
+	return time.Time{}, false
 }
 
 func (h *Handlers) appendToTodayJournal(ctx context.Context, entry string) error {
