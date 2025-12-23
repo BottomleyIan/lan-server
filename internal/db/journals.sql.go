@@ -9,6 +9,23 @@ import (
 	"context"
 )
 
+const deleteJournalsByMonth = `-- name: DeleteJournalsByMonth :exec
+DELETE FROM journals
+WHERE year = ?
+  AND month = ?
+`
+
+type DeleteJournalsByMonthParams struct {
+	Year  int64
+	Month int64
+}
+
+// Delete journals for a month
+func (q *Queries) DeleteJournalsByMonth(ctx context.Context, arg DeleteJournalsByMonthParams) error {
+	_, err := q.db.ExecContext(ctx, deleteJournalsByMonth, arg.Year, arg.Month)
+	return err
+}
+
 const getJournalByDate = `-- name: GetJournalByDate :one
 SELECT year, month, day, size_bytes, hash, tags, last_checked_at, created_at, updated_at
 FROM journals

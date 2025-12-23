@@ -1,10 +1,10 @@
 # Journal refresh query
 
 - What changed
-  - Added `refresh=true` query support for `/journals/{year}/{month}` to control filesystem refresh.
+  - Added `refresh=true` query support for `/journals/{year}/{month}` to drop existing rows for that month before reloading.
 - Why it changed
-  - Allow clients to avoid rescanning disk unless explicitly requested.
+  - Enable a dev-only reset of journal metadata while keeping the default scan/compare behavior.
 - New conventions/decisions
-  - When `refresh` is omitted or false, the endpoint returns cached DB results only.
+  - Default behavior always scans and compares size/hash; `refresh=true` forces a month reset first.
 - Follow-ups / TODOs
-  - Consider documenting default behavior in the API README.
+  - Consider documenting the dev-only nature of the refresh flag in the API README.

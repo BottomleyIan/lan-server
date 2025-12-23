@@ -55,19 +55,6 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	refresh := strings.EqualFold(r.URL.Query().Get("refresh"), "true")
-	if !refresh {
-		rows, err := h.App.Queries.ListJournalsByMonth(r.Context(), db.ListJournalsByMonthParams{
-			Year:  int64(year),
-			Month: int64(month),
-		})
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-		writeJSON(w, journalsDTOFromDB(rows))
-		return
-	}
-
 	entries, err := os.ReadDir(folder)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -80,6 +67,17 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	queries := h.App.Queries.WithTx(tx)
+
+	if refresh {
+		if err := queries.DeleteJournalsByMonth(r.Context(), db.DeleteJournalsByMonthParams{
+			Year:  int64(year),
+			Month: int64(month),
+		}); err != nil {
+			_ = tx.Rollback()
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	for _, entry := range entries {
 		if entry.IsDir() {

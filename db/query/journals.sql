@@ -14,6 +14,12 @@ WHERE year = ?
   AND month = ?
   AND day = ?;
 
+-- Delete journals for a month
+-- name: DeleteJournalsByMonth :exec
+DELETE FROM journals
+WHERE year = ?
+  AND month = ?;
+
 -- List journals for a month
 -- name: ListJournalsByMonth :many
 SELECT *
