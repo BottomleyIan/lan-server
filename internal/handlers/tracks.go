@@ -89,10 +89,6 @@ func (h *Handlers) ListTracks(w http.ResponseWriter, r *http.Request) {
 		}
 		artistID = &id
 	}
-	if albumID != nil && artistID != nil {
-		http.Error(w, "albumId and artistId are mutually exclusive", http.StatusBadRequest)
-		return
-	}
 
 	tracks, err := h.listTracksShared(r.Context(), albumID, artistID, opts)
 	if err != nil {
@@ -263,6 +259,32 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, artistI
 		includeUnavailable = 1
 	}
 
+	if albumID != nil && artistID != nil {
+		if opts.includeAlbum || opts.includeArtist {
+			rows, err := h.App.Queries.ListPlayableTracksForAlbumArtist(ctx, db.ListPlayableTracksForAlbumArtistParams{
+				Column1:  includeUnavailable,
+				AlbumID:  dbtypes.NullInt64{Int64: *albumID, Valid: true},
+				ArtistID: dbtypes.NullInt64{Int64: *artistID, Valid: true},
+				Column4:  prefix,
+			})
+			if err != nil {
+				return nil, err
+			}
+			return tracksDTOFromAlbumArtistRows(rows), nil
+		}
+
+		rows, err := h.App.Queries.ListPlayableTracksForAlbumArtistBase(ctx, db.ListPlayableTracksForAlbumArtistBaseParams{
+			Column1:  includeUnavailable,
+			AlbumID:  dbtypes.NullInt64{Int64: *albumID, Valid: true},
+			ArtistID: dbtypes.NullInt64{Int64: *artistID, Valid: true},
+			Column4:  prefix,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return tracksDTOFromBase(rows), nil
+	}
+
 	if albumID != nil {
 		if opts.includeAlbum || opts.includeArtist {
 			rows, err := h.App.Queries.ListPlayableTracksForAlbum(ctx, db.ListPlayableTracksForAlbumParams{
@@ -297,7 +319,7 @@ func (h *Handlers) listTracksShared(ctx context.Context, albumID *int64, artistI
 			if err != nil {
 				return nil, err
 			}
-			return tracksDTOFromPlayableRows(rows), nil
+			return tracksDTOFromArtistRows(rows), nil
 		}
 
 		rows, err := h.App.Queries.ListPlayableTracksForArtistBase(ctx, db.ListPlayableTracksForArtistBaseParams{

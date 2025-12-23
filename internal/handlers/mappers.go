@@ -120,6 +120,22 @@ func tracksDTOFromAlbumRows(rows []db.ListPlayableTracksForAlbumRow) []TrackDTO 
 	return out
 }
 
+func tracksDTOFromArtistRows(rows []db.ListPlayableTracksForArtistRow) []TrackDTO {
+	out := make([]TrackDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, trackDTOFromParts(row.Track, row.Artist, row.Album, row.Artist_2))
+	}
+	return out
+}
+
+func tracksDTOFromAlbumArtistRows(rows []db.ListPlayableTracksForAlbumArtistRow) []TrackDTO {
+	out := make([]TrackDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, trackDTOFromParts(row.Track, row.Artist, row.Album, row.Artist_2))
+	}
+	return out
+}
+
 func tracksDTOFromBase(rows []db.Track) []TrackDTO {
 	out := make([]TrackDTO, 0, len(rows))
 	for _, row := range rows {

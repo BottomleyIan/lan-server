@@ -449,6 +449,175 @@ func (q *Queries) ListPlayableTracksForAlbum(ctx context.Context, arg ListPlayab
 	return items, nil
 }
 
+const listPlayableTracksForAlbumArtist = `-- name: ListPlayableTracksForAlbumArtist :many
+SELECT
+  t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at,
+  ar.id, ar.name, ar.deleted_at, ar.created_at, ar.updated_at,
+  al.id, al.artist_id, al.title, al.image_path, al.deleted_at, al.created_at, al.updated_at,
+  al_ar.id, al_ar.name, al_ar.deleted_at, al_ar.created_at, al_ar.updated_at
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+LEFT JOIN artists ar ON ar.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+LEFT JOIN artists al_ar ON al_ar.id = al.artist_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND (?1 = 1 OR f.available = 1)
+  AND t.album_id = ?2
+  AND t.artist_id = ?3
+  AND (?4 IS NULL OR t.filename LIKE (?4 || '%'))
+ORDER BY t.rel_path
+`
+
+type ListPlayableTracksForAlbumArtistParams struct {
+	Column1  interface{}
+	AlbumID  dbtypes.NullInt64
+	ArtistID dbtypes.NullInt64
+	Column4  interface{}
+}
+
+type ListPlayableTracksForAlbumArtistRow struct {
+	Track    Track
+	Artist   Artist
+	Album    Album
+	Artist_2 Artist
+}
+
+// List playable tracks for an album + artist (roots currently available)
+func (q *Queries) ListPlayableTracksForAlbumArtist(ctx context.Context, arg ListPlayableTracksForAlbumArtistParams) ([]ListPlayableTracksForAlbumArtistRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumArtist,
+		arg.Column1,
+		arg.AlbumID,
+		arg.ArtistID,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayableTracksForAlbumArtistRow
+	for rows.Next() {
+		var i ListPlayableTracksForAlbumArtistRow
+		if err := rows.Scan(
+			&i.Track.ID,
+			&i.Track.FolderID,
+			&i.Track.ArtistID,
+			&i.Track.AlbumID,
+			&i.Track.RelPath,
+			&i.Track.Title,
+			&i.Track.Filename,
+			&i.Track.Ext,
+			&i.Track.Genre,
+			&i.Track.Year,
+			&i.Track.Rating,
+			&i.Track.ImagePath,
+			&i.Track.SizeBytes,
+			&i.Track.LastModified,
+			&i.Track.DurationSeconds,
+			&i.Track.LastSeenAt,
+			&i.Track.DeletedAt,
+			&i.Track.CreatedAt,
+			&i.Track.UpdatedAt,
+			&i.Artist.ID,
+			&i.Artist.Name,
+			&i.Artist.DeletedAt,
+			&i.Artist.CreatedAt,
+			&i.Artist.UpdatedAt,
+			&i.Album.ID,
+			&i.Album.ArtistID,
+			&i.Album.Title,
+			&i.Album.ImagePath,
+			&i.Album.DeletedAt,
+			&i.Album.CreatedAt,
+			&i.Album.UpdatedAt,
+			&i.Artist_2.ID,
+			&i.Artist_2.Name,
+			&i.Artist_2.DeletedAt,
+			&i.Artist_2.CreatedAt,
+			&i.Artist_2.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPlayableTracksForAlbumArtistBase = `-- name: ListPlayableTracksForAlbumArtistBase :many
+SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
+FROM tracks t
+JOIN folders f ON f.id = t.folder_id
+WHERE t.deleted_at IS NULL
+  AND f.deleted_at IS NULL
+  AND (?1 = 1 OR f.available = 1)
+  AND t.album_id = ?2
+  AND t.artist_id = ?3
+  AND (?4 IS NULL OR t.filename LIKE (?4 || '%'))
+ORDER BY t.rel_path
+`
+
+type ListPlayableTracksForAlbumArtistBaseParams struct {
+	Column1  interface{}
+	AlbumID  dbtypes.NullInt64
+	ArtistID dbtypes.NullInt64
+	Column4  interface{}
+}
+
+// List playable tracks for an album + artist without joins (roots currently available)
+func (q *Queries) ListPlayableTracksForAlbumArtistBase(ctx context.Context, arg ListPlayableTracksForAlbumArtistBaseParams) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayableTracksForAlbumArtistBase,
+		arg.Column1,
+		arg.AlbumID,
+		arg.ArtistID,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.FolderID,
+			&i.ArtistID,
+			&i.AlbumID,
+			&i.RelPath,
+			&i.Title,
+			&i.Filename,
+			&i.Ext,
+			&i.Genre,
+			&i.Year,
+			&i.Rating,
+			&i.ImagePath,
+			&i.SizeBytes,
+			&i.LastModified,
+			&i.DurationSeconds,
+			&i.LastSeenAt,
+			&i.DeletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPlayableTracksForAlbumBase = `-- name: ListPlayableTracksForAlbumBase :many
 SELECT t.id, t.folder_id, t.artist_id, t.album_id, t.rel_path, t.title, t.filename, t.ext, t.genre, t.year, t.rating, t.image_path, t.size_bytes, t.last_modified, t.duration_seconds, t.last_seen_at, t.deleted_at, t.created_at, t.updated_at
 FROM tracks t

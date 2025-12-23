@@ -134,7 +134,7 @@ func (h *Handlers) ListAlbumTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tracks, err := h.listTracksShared(r.Context(), &id, opts)
+	tracks, err := h.listTracksShared(r.Context(), &id, nil, opts)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
