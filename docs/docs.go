@@ -1888,25 +1888,34 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "body": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Include the new journals endpoints."
                 },
                 "deadline": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2025-12-23 Tue 17:00"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Write release notes"
                 },
                 "scheduled": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2025-12-23 Tue 11:00"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "TODO"
                 },
                 "tags": {
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "tag1",
+                        "tag2"
+                    ]
                 }
             }
         },

@@ -44,12 +44,12 @@ type createJournalEntryRequest struct {
 }
 
 type createLogseqTaskRequest struct {
-	Status    string   `json:"status"`
-	Tags      []string `json:"tags,omitempty"`
-	Desc      string   `json:"description"`
-	Deadline  *string  `json:"deadline,omitempty"`
-	Scheduled *string  `json:"scheduled,omitempty"`
-	Body      *string  `json:"body,omitempty"`
+	Status    string   `json:"status" example:"TODO"`
+	Tags      []string `json:"tags,omitempty" example:"tag1,tag2"`
+	Desc      string   `json:"description" example:"Write release notes"`
+	Deadline  *string  `json:"deadline,omitempty" example:"2025-12-23 Tue 17:00"`
+	Scheduled *string  `json:"scheduled,omitempty" example:"2025-12-23 Tue 11:00"`
+	Body      *string  `json:"body,omitempty" example:"Include the new journals endpoints."`
 }
 
 // ListJournalsByMonth godoc

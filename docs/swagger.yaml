@@ -276,16 +276,24 @@ definitions:
   handlers.createLogseqTaskRequest:
     properties:
       body:
+        example: Include the new journals endpoints.
         type: string
       deadline:
+        example: 2025-12-23 Tue 17:00
         type: string
       description:
+        example: Write release notes
         type: string
       scheduled:
+        example: 2025-12-23 Tue 11:00
         type: string
       status:
+        example: TODO
         type: string
       tags:
+        example:
+        - tag1
+        - tag2
         items:
           type: string
         type: array
