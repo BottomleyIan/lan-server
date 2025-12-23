@@ -132,3 +132,22 @@ type SettingKeyDTO struct {
 	Key         string `json:"key"`
 	Description string `json:"description"`
 }
+
+type JournalDTO struct {
+	Year          int64     `json:"year"`
+	Month         int64     `json:"month"`
+	Day           int64     `json:"day"`
+	SizeBytes     int64     `json:"size_bytes"`
+	Hash          string    `json:"hash"`
+	Tags          []string  `json:"tags,omitempty"`
+	LastCheckedAt time.Time `json:"last_checked_at"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type JournalDayDTO struct {
+	Year  int64  `json:"year"`
+	Month int64  `json:"month"`
+	Day   int64  `json:"day"`
+	Raw   string `json:"raw"`
+}

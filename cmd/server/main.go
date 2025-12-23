@@ -122,6 +122,10 @@ func main() {
 				r.Post("/transitions", h.CreateTaskTransition)
 			})
 		})
+		r.Route("/journals", func(r chi.Router) {
+			r.Get("/{year}/{month}", h.ListJournalsByMonth)
+			r.Get("/{year}/{month}/{day}", h.GetJournalDay)
+		})
 		r.Route("/settings", func(r chi.Router) {
 			r.Get("/", h.ListSettings)
 			r.Post("/", h.CreateSetting)
@@ -167,23 +171,5 @@ func requireFFmpeg() {
 	}
 	if _, err := exec.LookPath("ffprobe"); err != nil {
 		log.Panic("ffprobe not installed or not on PATH")
-	}
-}
-
-func corsAllowAll() func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Authorization")
-			w.Header().Set("Access-Control-Max-Age", "86400")
-
-			if r.Method == http.MethodOptions {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
 	}
 }

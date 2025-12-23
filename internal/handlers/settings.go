@@ -22,10 +22,12 @@ type updateSettingRequest struct {
 	Value string `json:"value"`
 }
 
+const settingKeyJournalsFolder = "Journals Folder"
+
 var settingKeyDefinitions = []SettingKeyDTO{
 	{
-		Key:         "journals_folder",
-		Description: "Filesystem path for journal entries.",
+		Key:         settingKeyJournalsFolder,
+		Description: "logseq journals folder",
 	},
 	{
 		Key:         "theme",

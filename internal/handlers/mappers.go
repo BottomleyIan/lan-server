@@ -308,6 +308,43 @@ func settingsDTOFromDB(rows []db.Setting) []SettingDTO {
 	return out
 }
 
+func journalDTOFromDB(j db.Journal) JournalDTO {
+	return JournalDTO{
+		Year:          j.Year,
+		Month:         j.Month,
+		Day:           j.Day,
+		SizeBytes:     j.SizeBytes,
+		Hash:          j.Hash,
+		Tags:          tagsFromJSONString(j.Tags),
+		LastCheckedAt: j.LastCheckedAt,
+		CreatedAt:     j.CreatedAt,
+		UpdatedAt:     j.UpdatedAt,
+	}
+}
+
+func journalsDTOFromDB(rows []db.Journal) []JournalDTO {
+	out := make([]JournalDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, journalDTOFromDB(row))
+	}
+	return out
+}
+
+func tagsFromJSONString(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(raw), &tags); err != nil {
+		return nil
+	}
+	if len(tags) == 0 {
+		return nil
+	}
+	return tags
+}
+
 func tagsFromNullString(ns dbtypes.NullString) []string {
 	if !ns.Valid {
 		return nil

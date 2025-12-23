@@ -80,6 +80,40 @@ definitions:
       time:
         type: string
     type: object
+  handlers.JournalDTO:
+    properties:
+      created_at:
+        type: string
+      day:
+        type: integer
+      hash:
+        type: string
+      last_checked_at:
+        type: string
+      month:
+        type: integer
+      size_bytes:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      year:
+        type: integer
+    type: object
+  handlers.JournalDayDTO:
+    properties:
+      day:
+        type: integer
+      month:
+        type: integer
+      raw:
+        type: string
+      year:
+        type: integer
+    type: object
   handlers.PlaylistDTO:
     properties:
       created_at:
@@ -661,6 +695,59 @@ paths:
       summary: Health check
       tags:
       - system
+  /journals/{year}/{month}:
+    get:
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.JournalDTO'
+            type: array
+      summary: List journals for a month
+      tags:
+      - journals
+  /journals/{year}/{month}/{day}:
+    get:
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.JournalDayDTO'
+      summary: Get journal entry for a day
+      tags:
+      - journals
   /playlists:
     get:
       produces:

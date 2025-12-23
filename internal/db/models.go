@@ -41,6 +41,18 @@ type Folder struct {
 	UpdatedAt      time.Time
 }
 
+type Journal struct {
+	Year          int64
+	Month         int64
+	Day           int64
+	SizeBytes     int64
+	Hash          string
+	Tags          string
+	LastCheckedAt time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
 type Playlist struct {
 	ID        int64
 	Name      string
