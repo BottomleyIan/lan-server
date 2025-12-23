@@ -22,7 +22,7 @@ import (
 )
 
 var journalFilenameRe = regexp.MustCompile(`^(\d{4})_(\d{2})_(\d{2})\.md$`)
-var journalTagRe = regexp.MustCompile(`(?:^|\s)#([A-Za-z0-9/_-]+)`)
+var journalTagRe = regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
 
 // ListJournalsByMonth godoc
 // @Summary List journals for a month
