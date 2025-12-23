@@ -246,7 +246,7 @@ func taskDTOFromDB(t db.Task) TaskDTO {
 		Position:    t.Position,
 		Title:       t.Title,
 		Body:        stringPtrFromNullString(t.Body),
-		Status:      t.Status,
+		Status:      mapTaskStatus(t.Status),
 		ScheduledAt: logseqTimestampToISO(stringPtrFromNullString(t.ScheduledAt)),
 		DeadlineAt:  logseqTimestampToISO(stringPtrFromNullString(t.DeadlineAt)),
 		CreatedAt:   t.CreatedAt,
@@ -359,6 +359,21 @@ func logseqTimestampToISO(value *string) *string {
 	}
 	out := ts.UTC().Format(time.RFC3339)
 	return &out
+}
+
+func mapTaskStatus(status string) string {
+	switch strings.TrimSpace(status) {
+	case "DONE":
+		return "DONE"
+	case "CANCELLED":
+		return "CANCELLED"
+	case "DOING", "IN-PROGRESS", "WAITING":
+		return "IN-PROGRESS"
+	case "LATER", "NOW", "TODO":
+		return "TODO"
+	default:
+		return status
+	}
 }
 
 func artistSummaryFromArtist(ar db.Artist) *ArtistSummaryDTO {
