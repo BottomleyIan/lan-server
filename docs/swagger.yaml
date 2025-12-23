@@ -698,6 +698,10 @@ paths:
   /journals/{year}/{month}:
     get:
       parameters:
+      - description: Force refresh from disk
+        in: query
+        name: refresh
+        type: boolean
       - description: Year
         in: path
         name: year

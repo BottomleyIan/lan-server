@@ -521,6 +521,12 @@ const docTemplate = `{
                 "summary": "List journals for a month",
                 "parameters": [
                     {
+                        "type": "boolean",
+                        "description": "Force refresh from disk",
+                        "name": "refresh",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Year",
                         "name": "year",

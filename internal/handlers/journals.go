@@ -28,6 +28,7 @@ var journalTagRe = regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
 // @Summary List journals for a month
 // @Tags journals
 // @Produce json
+// @Param refresh query bool false "Force refresh from disk"
 // @Param year path int true "Year"
 // @Param month path int true "Month"
 // @Success 200 {array} JournalDTO
@@ -50,6 +51,20 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 	}
 	if !ok {
 		http.Error(w, "journals folder not found", http.StatusNotFound)
+		return
+	}
+
+	refresh := strings.EqualFold(r.URL.Query().Get("refresh"), "true")
+	if !refresh {
+		rows, err := h.App.Queries.ListJournalsByMonth(r.Context(), db.ListJournalsByMonthParams{
+			Year:  int64(year),
+			Month: int64(month),
+		})
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, journalsDTOFromDB(rows))
 		return
 	}
 
