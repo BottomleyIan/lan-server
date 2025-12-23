@@ -112,10 +112,12 @@ func main() {
 		})
 		r.Route("/tasks", func(r chi.Router) {
 			r.Get("/", h.ListTasks)
+			r.Post("/", h.CreateTask)
 		})
 		r.Route("/journals", func(r chi.Router) {
 			r.Get("/{year}/{month}", h.ListJournalsByMonth)
 			r.Get("/{year}/{month}/{day}", h.GetJournalDay)
+			r.Post("/", h.CreateJournalEntry)
 		})
 		r.Route("/settings", func(r chi.Router) {
 			r.Get("/", h.ListSettings)

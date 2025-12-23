@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"bottomley.ian/musicserver/internal/db"
 	"bottomley.ian/musicserver/internal/dbtypes"
@@ -33,6 +35,21 @@ var logseqTaskStatusSet = map[string]struct{}{
 	"CANCELLED":   {},
 	"IN-PROGRESS": {},
 	"WAITING":     {},
+}
+
+type createJournalEntryRequest struct {
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	Body        *string  `json:"body,omitempty"`
+}
+
+type createLogseqTaskRequest struct {
+	Status    string   `json:"status"`
+	Tags      []string `json:"tags,omitempty"`
+	Desc      string   `json:"description"`
+	Deadline  *string  `json:"deadline,omitempty"`
+	Scheduled *string  `json:"scheduled,omitempty"`
+	Body      *string  `json:"body,omitempty"`
 }
 
 // ListJournalsByMonth godoc
@@ -152,6 +169,45 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, journalsDTOFromDB(rows))
 }
 
+// CreateJournalEntry godoc
+// @Summary Append a journal entry for today
+// @Tags journals
+// @Accept json
+// @Produce json
+// @Param request body createJournalEntryRequest true "Journal entry payload"
+// @Success 204
+// @Router /journals [post]
+func (h *Handlers) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body createJournalEntryRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	description := strings.TrimSpace(body.Description)
+	if description == "" {
+		http.Error(w, "description required", http.StatusBadRequest)
+		return
+	}
+
+	entry := renderJournalEntry(body.Tags, description, body.Body)
+	if err := h.appendToTodayJournal(r.Context(), entry); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // GetJournalDay godoc
 // @Summary Get journal entry for a day
 // @Tags journals
@@ -231,6 +287,55 @@ func (h *Handlers) journalsFolder(ctx context.Context) (string, bool, error) {
 		return "", false, nil
 	}
 	return path, true, nil
+}
+
+// CreateTask godoc
+// @Summary Append a task entry for today
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param request body createLogseqTaskRequest true "Task payload"
+// @Success 204
+// @Router /tasks [post]
+func (h *Handlers) CreateTask(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body createLogseqTaskRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	status := strings.TrimSpace(body.Status)
+	if status == "" {
+		http.Error(w, "status required", http.StatusBadRequest)
+		return
+	}
+	if _, ok := logseqTaskStatusSet[status]; !ok {
+		http.Error(w, "invalid status", http.StatusBadRequest)
+		return
+	}
+
+	description := strings.TrimSpace(body.Desc)
+	if description == "" {
+		http.Error(w, "description required", http.StatusBadRequest)
+		return
+	}
+
+	entry := renderTaskEntry(status, body.Tags, description, body.Deadline, body.Scheduled, body.Body)
+	if err := h.appendToTodayJournal(r.Context(), entry); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func parseYearMonthParams(w http.ResponseWriter, r *http.Request) (int, int, bool) {
@@ -332,6 +437,8 @@ type logseqTask struct {
 	ScheduledAt string
 	DeadlineAt  string
 }
+
+var errJournalsFolderNotFound = errors.New("journals folder not found")
 
 func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, day int, sizeBytes int64, hashHex string, data []byte) error {
 	existing, err := queries.GetJournalByDate(ctx, db.GetJournalByDateParams{
@@ -435,6 +542,7 @@ func parseLogseqTasks(content string) []logseqTask {
 				continue
 			}
 			title := strings.TrimSpace(strings.TrimPrefix(rest, status))
+			title = strings.TrimSpace(stripLogseqTags(title))
 			current = &logseqTask{
 				Title:  title,
 				Status: status,
@@ -458,6 +566,10 @@ func parseLogseqTasks(content string) []logseqTask {
 	return tasks
 }
 
+func stripLogseqTags(value string) string {
+	return journalTagRe.ReplaceAllString(value, "")
+}
+
 func parseLogseqTimestamp(line, prefix string) string {
 	value := strings.TrimSpace(strings.TrimPrefix(line, prefix))
 	if strings.HasPrefix(value, "<") && strings.HasSuffix(value, ">") {
@@ -472,4 +584,174 @@ func nullStringFromString(value string) dbtypes.NullString {
 		return dbtypes.NullString{}
 	}
 	return dbtypes.NullString{String: trimmed, Valid: true}
+}
+
+func renderJournalEntry(tags []string, description string, body *string) string {
+	tagText := formatLogseqTags(tags)
+	line := "- "
+	if tagText != "" {
+		line += tagText + " "
+	}
+	line += description
+	lines := []string{line}
+	if body != nil && strings.TrimSpace(*body) != "" {
+		lines = append(lines, indentBody(*body)...)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderTaskEntry(status string, tags []string, description string, deadline *string, scheduled *string, body *string) string {
+	tagText := formatLogseqTags(tags)
+	line := "- " + status + " "
+	if tagText != "" {
+		line += tagText + " "
+	}
+	line += description
+
+	lines := []string{line}
+	if deadline != nil && strings.TrimSpace(*deadline) != "" {
+		lines = append(lines, "  DEADLINE: "+formatLogseqTimestamp(*deadline))
+	}
+	if scheduled != nil && strings.TrimSpace(*scheduled) != "" {
+		lines = append(lines, "  SCHEDULED: "+formatLogseqTimestamp(*scheduled))
+	}
+	if body != nil && strings.TrimSpace(*body) != "" {
+		lines = append(lines, indentBody(*body)...)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func formatLogseqTags(tags []string) string {
+	seen := make(map[string]struct{}, len(tags))
+	var out strings.Builder
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		if _, ok := seen[tag]; ok {
+			continue
+		}
+		seen[tag] = struct{}{}
+		out.WriteString("[[")
+		out.WriteString(tag)
+		out.WriteString("]]")
+	}
+	return out.String()
+}
+
+func indentBody(body string) []string {
+	lines := strings.Split(body, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		out = append(out, "  "+line)
+	}
+	return out
+}
+
+func formatLogseqTimestamp(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	if strings.HasPrefix(trimmed, "<") && strings.HasSuffix(trimmed, ">") {
+		return trimmed
+	}
+	return "<" + trimmed + ">"
+}
+
+func (h *Handlers) appendToTodayJournal(ctx context.Context, entry string) error {
+	folder, ok, err := h.journalsFolder(ctx)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errJournalsFolderNotFound
+	}
+
+	now := time.Now()
+	filename := journalFilename(now.Year(), int(now.Month()), now.Day())
+	fullPath := filepath.Join(folder, filename)
+
+	if err := h.App.FS.MkdirAll(folder, 0o755); err != nil {
+		return err
+	}
+
+	if err := ensureTrailingNewline(fullPath); err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(entry + "\n"); err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		return err
+	}
+	hash := sha256.Sum256(data)
+	hashHex := hex.EncodeToString(hash[:])
+
+	tx, err := h.App.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	queries := h.App.Queries.WithTx(tx)
+	if err := syncJournalFromFile(ctx, queries, now.Year(), int(now.Month()), now.Day(), info.Size(), hashHex, data); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureTrailingNewline(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	if info.Size() == 0 {
+		return nil
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.Seek(-1, io.SeekEnd); err != nil {
+		return err
+	}
+	buf := make([]byte, 1)
+	if _, err := f.Read(buf); err != nil {
+		return err
+	}
+	if buf[0] == '\n' {
+		return nil
+	}
+
+	af, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return err
+	}
+	defer af.Close()
+	_, err = af.WriteString("\n")
+	return err
 }

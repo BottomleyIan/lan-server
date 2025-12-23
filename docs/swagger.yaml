@@ -262,6 +262,34 @@ definitions:
       path:
         type: string
     type: object
+  handlers.createJournalEntryRequest:
+    properties:
+      body:
+        type: string
+      description:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.createLogseqTaskRequest:
+    properties:
+      body:
+        type: string
+      deadline:
+        type: string
+      description:
+        type: string
+      scheduled:
+        type: string
+      status:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
   handlers.createPlaylistRequest:
     properties:
       name:
@@ -648,6 +676,25 @@ paths:
       summary: Health check
       tags:
       - system
+  /journals:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Journal entry payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createJournalEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Append a journal entry for today
+      tags:
+      - journals
   /journals/{year}/{month}:
     get:
       parameters:
@@ -1045,6 +1092,24 @@ paths:
               $ref: '#/definitions/handlers.TaskDTO'
             type: array
       summary: List tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createLogseqTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Append a task entry for today
       tags:
       - tasks
   /tracks:
