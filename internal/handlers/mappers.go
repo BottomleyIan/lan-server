@@ -247,8 +247,8 @@ func taskDTOFromDB(t db.Task) TaskDTO {
 		Title:       t.Title,
 		Body:        stringPtrFromNullString(t.Body),
 		Status:      t.Status,
-		ScheduledAt: stringPtrFromNullString(t.ScheduledAt),
-		DeadlineAt:  stringPtrFromNullString(t.DeadlineAt),
+		ScheduledAt: logseqTimestampToISO(stringPtrFromNullString(t.ScheduledAt)),
+		DeadlineAt:  logseqTimestampToISO(stringPtrFromNullString(t.DeadlineAt)),
 		CreatedAt:   t.CreatedAt,
 		UpdatedAt:   t.UpdatedAt,
 	}
@@ -332,6 +332,33 @@ func tagsFromNullString(ns dbtypes.NullString) []string {
 		return nil
 	}
 	return tags
+}
+
+func logseqTimestampToISO(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	parts := strings.Fields(trimmed)
+	if len(parts) == 0 {
+		return nil
+	}
+	datePart := parts[0]
+	if len(parts) < 3 {
+		out := datePart
+		return &out
+	}
+	timePart := parts[2]
+	ts, err := time.Parse("2006-01-02 15:04", datePart+" "+timePart)
+	if err != nil {
+		out := trimmed
+		return &out
+	}
+	out := ts.UTC().Format(time.RFC3339)
+	return &out
 }
 
 func artistSummaryFromArtist(ar db.Artist) *ArtistSummaryDTO {
