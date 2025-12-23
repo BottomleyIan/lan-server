@@ -79,27 +79,18 @@ type Setting struct {
 }
 
 type Task struct {
-	ID         int64
-	Title      string
-	Body       dbtypes.NullString
-	Tags       dbtypes.NullString
-	StatusCode string
-	DeletedAt  dbtypes.NullTime
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-}
-
-type TaskStatus struct {
-	Code  string
-	Label string
-}
-
-type TaskTransition struct {
-	ID         int64
-	TaskID     int64
-	StatusCode string
-	Reason     dbtypes.NullString
-	ChangedAt  time.Time
+	ID          int64
+	Year        int64
+	Month       int64
+	Day         int64
+	Position    int64
+	Title       string
+	Body        dbtypes.NullString
+	Status      string
+	ScheduledAt dbtypes.NullString
+	DeadlineAt  dbtypes.NullString
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type Track struct {

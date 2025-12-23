@@ -97,28 +97,19 @@ type PlaylistTrackDTO struct {
 	Track      *TrackDTO  `json:"track,omitempty"`
 }
 
-type TaskStatusDTO struct {
-	Code  string `json:"code"`
-	Label string `json:"label"`
-}
-
 type TaskDTO struct {
-	ID         int64      `json:"id"`
-	Title      string     `json:"title"`
-	Body       *string    `json:"body,omitempty"`
-	Tags       []string   `json:"tags,omitempty"`
-	StatusCode string     `json:"status_code"`
-	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-}
-
-type TaskTransitionDTO struct {
-	ID         int64     `json:"id"`
-	TaskID     int64     `json:"task_id"`
-	StatusCode string    `json:"status_code"`
-	Reason     *string   `json:"reason,omitempty"`
-	ChangedAt  time.Time `json:"changed_at"`
+	ID          int64     `json:"id"`
+	Year        int64     `json:"year"`
+	Month       int64     `json:"month"`
+	Day         int64     `json:"day"`
+	Position    int64     `json:"position"`
+	Title       string    `json:"title"`
+	Body        *string   `json:"body,omitempty"`
+	Status      string    `json:"status"`
+	ScheduledAt *string   `json:"scheduled_at,omitempty"`
+	DeadlineAt  *string   `json:"deadline_at,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type SettingDTO struct {

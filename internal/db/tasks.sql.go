@@ -11,161 +11,103 @@ import (
 	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
-const addTaskTransition = `-- name: AddTaskTransition :one
-INSERT INTO task_transitions (task_id, status_code, reason)
-VALUES (?, ?, ?)
-RETURNING id, task_id, status_code, reason, changed_at
-`
-
-type AddTaskTransitionParams struct {
-	TaskID     int64
-	StatusCode string
-	Reason     dbtypes.NullString
-}
-
-// ---------- task transitions ----------
-func (q *Queries) AddTaskTransition(ctx context.Context, arg AddTaskTransitionParams) (TaskTransition, error) {
-	row := q.db.QueryRowContext(ctx, addTaskTransition, arg.TaskID, arg.StatusCode, arg.Reason)
-	var i TaskTransition
-	err := row.Scan(
-		&i.ID,
-		&i.TaskID,
-		&i.StatusCode,
-		&i.Reason,
-		&i.ChangedAt,
-	)
-	return i, err
-}
-
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (title, body, tags, status_code)
-VALUES (?, ?, ?, ?)
-RETURNING id, title, body, tags, status_code, deleted_at, created_at, updated_at
+INSERT INTO tasks (
+  year,
+  month,
+  day,
+  position,
+  title,
+  body,
+  status,
+  scheduled_at,
+  deadline_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, year, month, day, position, title, body, status, scheduled_at, deadline_at, created_at, updated_at
 `
 
 type CreateTaskParams struct {
-	Title      string
-	Body       dbtypes.NullString
-	Tags       dbtypes.NullString
-	StatusCode string
+	Year        int64
+	Month       int64
+	Day         int64
+	Position    int64
+	Title       string
+	Body        dbtypes.NullString
+	Status      string
+	ScheduledAt dbtypes.NullString
+	DeadlineAt  dbtypes.NullString
 }
 
 // ---------- tasks ----------
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, createTask,
+		arg.Year,
+		arg.Month,
+		arg.Day,
+		arg.Position,
 		arg.Title,
 		arg.Body,
-		arg.Tags,
-		arg.StatusCode,
+		arg.Status,
+		arg.ScheduledAt,
+		arg.DeadlineAt,
 	)
 	var i Task
 	err := row.Scan(
 		&i.ID,
+		&i.Year,
+		&i.Month,
+		&i.Day,
+		&i.Position,
 		&i.Title,
 		&i.Body,
-		&i.Tags,
-		&i.StatusCode,
-		&i.DeletedAt,
+		&i.Status,
+		&i.ScheduledAt,
+		&i.DeadlineAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getTaskByID = `-- name: GetTaskByID :one
-SELECT id, title, body, tags, status_code, deleted_at, created_at, updated_at
-FROM tasks
-WHERE id = ?
-  AND deleted_at IS NULL
+const deleteTasksByDate = `-- name: DeleteTasksByDate :exec
+DELETE FROM tasks
+WHERE year = ?
+  AND month = ?
+  AND day = ?
 `
 
-func (q *Queries) GetTaskByID(ctx context.Context, id int64) (Task, error) {
-	row := q.db.QueryRowContext(ctx, getTaskByID, id)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Body,
-		&i.Tags,
-		&i.StatusCode,
-		&i.DeletedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+type DeleteTasksByDateParams struct {
+	Year  int64
+	Month int64
+	Day   int64
 }
 
-const listTaskStatuses = `-- name: ListTaskStatuses :many
-SELECT code, label
-FROM task_statuses
-ORDER BY code
-`
-
-// ---------- task statuses ----------
-func (q *Queries) ListTaskStatuses(ctx context.Context) ([]TaskStatus, error) {
-	rows, err := q.db.QueryContext(ctx, listTaskStatuses)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []TaskStatus
-	for rows.Next() {
-		var i TaskStatus
-		if err := rows.Scan(&i.Code, &i.Label); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) DeleteTasksByDate(ctx context.Context, arg DeleteTasksByDateParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTasksByDate, arg.Year, arg.Month, arg.Day)
+	return err
 }
 
-const listTaskTransitions = `-- name: ListTaskTransitions :many
-SELECT id, task_id, status_code, reason, changed_at
-FROM task_transitions
-WHERE task_id = ?
-ORDER BY changed_at DESC
+const deleteTasksByMonth = `-- name: DeleteTasksByMonth :exec
+DELETE FROM tasks
+WHERE year = ?
+  AND month = ?
 `
 
-func (q *Queries) ListTaskTransitions(ctx context.Context, taskID int64) ([]TaskTransition, error) {
-	rows, err := q.db.QueryContext(ctx, listTaskTransitions, taskID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []TaskTransition
-	for rows.Next() {
-		var i TaskTransition
-		if err := rows.Scan(
-			&i.ID,
-			&i.TaskID,
-			&i.StatusCode,
-			&i.Reason,
-			&i.ChangedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type DeleteTasksByMonthParams struct {
+	Year  int64
+	Month int64
+}
+
+func (q *Queries) DeleteTasksByMonth(ctx context.Context, arg DeleteTasksByMonthParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTasksByMonth, arg.Year, arg.Month)
+	return err
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT id, title, body, tags, status_code, deleted_at, created_at, updated_at
+SELECT id, year, month, day, position, title, body, status, scheduled_at, deadline_at, created_at, updated_at
 FROM tasks
-WHERE deleted_at IS NULL
-ORDER BY created_at DESC
+ORDER BY year DESC, month DESC, day DESC, position ASC
 `
 
 func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
@@ -179,11 +121,15 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		var i Task
 		if err := rows.Scan(
 			&i.ID,
+			&i.Year,
+			&i.Month,
+			&i.Day,
+			&i.Position,
 			&i.Title,
 			&i.Body,
-			&i.Tags,
-			&i.StatusCode,
-			&i.DeletedAt,
+			&i.Status,
+			&i.ScheduledAt,
+			&i.DeadlineAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -198,87 +144,4 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		return nil, err
 	}
 	return items, nil
-}
-
-const softDeleteTask = `-- name: SoftDeleteTask :execrows
-UPDATE tasks
-SET deleted_at = CURRENT_TIMESTAMP
-WHERE id = ?
-  AND deleted_at IS NULL
-`
-
-func (q *Queries) SoftDeleteTask(ctx context.Context, id int64) (int64, error) {
-	result, err := q.db.ExecContext(ctx, softDeleteTask, id)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
-}
-
-const updateTask = `-- name: UpdateTask :one
-UPDATE tasks
-SET
-  title = ?,
-  body = ?,
-  tags = ?
-WHERE id = ?
-  AND deleted_at IS NULL
-RETURNING id, title, body, tags, status_code, deleted_at, created_at, updated_at
-`
-
-type UpdateTaskParams struct {
-	Title string
-	Body  dbtypes.NullString
-	Tags  dbtypes.NullString
-	ID    int64
-}
-
-func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, updateTask,
-		arg.Title,
-		arg.Body,
-		arg.Tags,
-		arg.ID,
-	)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Body,
-		&i.Tags,
-		&i.StatusCode,
-		&i.DeletedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateTaskStatus = `-- name: UpdateTaskStatus :one
-UPDATE tasks
-SET status_code = ?
-WHERE id = ?
-  AND deleted_at IS NULL
-RETURNING id, title, body, tags, status_code, deleted_at, created_at, updated_at
-`
-
-type UpdateTaskStatusParams struct {
-	StatusCode string
-	ID         int64
-}
-
-func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, updateTaskStatus, arg.StatusCode, arg.ID)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Body,
-		&i.Tags,
-		&i.StatusCode,
-		&i.DeletedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
 }

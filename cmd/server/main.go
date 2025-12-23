@@ -112,15 +112,6 @@ func main() {
 		})
 		r.Route("/tasks", func(r chi.Router) {
 			r.Get("/", h.ListTasks)
-			r.Post("/", h.CreateTask)
-			r.Get("/statuses", h.ListTaskStatuses)
-			r.Route("/{id}", func(r chi.Router) {
-				r.Get("/", h.GetTask)
-				r.Put("/", h.UpdateTask)
-				r.Delete("/", h.DeleteTask)
-				r.Get("/transitions", h.ListTaskTransitions)
-				r.Post("/transitions", h.CreateTaskTransition)
-			})
 		})
 		r.Route("/journals", func(r chi.Router) {
 			r.Get("/{year}/{month}", h.ListJournalsByMonth)
