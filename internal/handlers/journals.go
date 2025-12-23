@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
+	myfs "bottomley.ian/musicserver/internal/services/fs"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -224,6 +225,11 @@ func (h *Handlers) journalsFolder(ctx context.Context) (string, bool, error) {
 	if path == "" {
 		return "", false, nil
 	}
+	expanded, err := myfs.ExpandUserPath(path)
+	if err != nil {
+		return "", false, err
+	}
+	path = expanded
 	info, err := os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
