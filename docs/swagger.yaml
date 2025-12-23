@@ -688,6 +688,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: createJournalEntry
       parameters:
       - description: Journal entry payload
         in: body
@@ -705,6 +706,7 @@ paths:
       - journals
   /journals/{year}/{month}:
     get:
+      operationId: listJournalsByMonth
       parameters:
       - description: Force refresh from disk
         in: query
@@ -734,6 +736,7 @@ paths:
       - journals
   /journals/{year}/{month}/{day}:
     get:
+      operationId: getJournalDay
       parameters:
       - description: Year
         in: path

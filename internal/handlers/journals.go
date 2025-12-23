@@ -56,6 +56,7 @@ type createLogseqTaskRequest struct {
 // @Summary List journals for a month
 // @Tags journals
 // @Produce json
+// @ID listJournalsByMonth
 // @Param refresh query bool false "Force refresh from disk"
 // @Param year path int true "Year"
 // @Param month path int true "Month"
@@ -174,6 +175,7 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 // @Tags journals
 // @Accept json
 // @Produce json
+// @ID createJournalEntry
 // @Param request body createJournalEntryRequest true "Journal entry payload"
 // @Success 204
 // @Router /journals [post]
@@ -212,6 +214,7 @@ func (h *Handlers) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
 // @Summary Get journal entry for a day
 // @Tags journals
 // @Produce json
+// @ID getJournalDay
 // @Param year path int true "Year"
 // @Param month path int true "Month"
 // @Param day path int true "Day"

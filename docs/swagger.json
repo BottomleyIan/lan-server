@@ -516,6 +516,7 @@
                     "journals"
                 ],
                 "summary": "Append a journal entry for today",
+                "operationId": "createJournalEntry",
                 "parameters": [
                     {
                         "description": "Journal entry payload",
@@ -543,6 +544,7 @@
                     "journals"
                 ],
                 "summary": "List journals for a month",
+                "operationId": "listJournalsByMonth",
                 "parameters": [
                     {
                         "type": "boolean",
@@ -587,6 +589,7 @@
                     "journals"
                 ],
                 "summary": "Get journal entry for a day",
+                "operationId": "getJournalDay",
                 "parameters": [
                     {
                         "type": "integer",

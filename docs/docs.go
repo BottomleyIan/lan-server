@@ -522,6 +522,7 @@ const docTemplate = `{
                     "journals"
                 ],
                 "summary": "Append a journal entry for today",
+                "operationId": "createJournalEntry",
                 "parameters": [
                     {
                         "description": "Journal entry payload",
@@ -549,6 +550,7 @@ const docTemplate = `{
                     "journals"
                 ],
                 "summary": "List journals for a month",
+                "operationId": "listJournalsByMonth",
                 "parameters": [
                     {
                         "type": "boolean",
@@ -593,6 +595,7 @@ const docTemplate = `{
                     "journals"
                 ],
                 "summary": "Get journal entry for a day",
+                "operationId": "getJournalDay",
                 "parameters": [
                     {
                         "type": "integer",
