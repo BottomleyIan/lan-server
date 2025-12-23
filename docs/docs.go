@@ -854,6 +854,167 @@ const docTemplate = `{
                 }
             }
         },
+        "/settings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "List settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.SettingDTO"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Create setting",
+                "parameters": [
+                    {
+                        "description": "Setting payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.createSettingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SettingDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/keys": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "List available setting keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.SettingKeyDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/{key}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SettingDTO"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Setting payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateSettingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SettingDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Delete setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/tasks": {
             "get": {
                 "produces": [
@@ -1562,6 +1723,34 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.SettingDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.SettingKeyDTO": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.TaskDTO": {
             "type": "object",
             "properties": {
@@ -1720,6 +1909,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.createSettingRequest": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.createTaskRequest": {
             "type": "object",
             "properties": {
@@ -1786,6 +1986,14 @@ const docTemplate = `{
             "properties": {
                 "position": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.updateSettingRequest": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
                 }
             }
         },

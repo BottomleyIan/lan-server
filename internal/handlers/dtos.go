@@ -120,3 +120,15 @@ type TaskTransitionDTO struct {
 	Reason     *string   `json:"reason,omitempty"`
 	ChangedAt  time.Time `json:"changed_at"`
 }
+
+type SettingDTO struct {
+	Key       string    `json:"key"`
+	Value     string    `json:"value"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type SettingKeyDTO struct {
+	Key         string `json:"key"`
+	Description string `json:"description"`
+}

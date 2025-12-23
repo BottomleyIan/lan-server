@@ -59,6 +59,13 @@ type PlaylistTrack struct {
 	UpdatedAt  time.Time
 }
 
+type Setting struct {
+	Key       string
+	Value     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type Task struct {
 	ID         int64
 	Title      string

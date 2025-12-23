@@ -122,6 +122,16 @@ func main() {
 				r.Post("/transitions", h.CreateTaskTransition)
 			})
 		})
+		r.Route("/settings", func(r chi.Router) {
+			r.Get("/", h.ListSettings)
+			r.Post("/", h.CreateSetting)
+			r.Get("/keys", h.ListSettingKeys)
+			r.Route("/{key}", func(r chi.Router) {
+				r.Get("/", h.GetSetting)
+				r.Put("/", h.UpdateSetting)
+				r.Delete("/", h.DeleteSetting)
+			})
+		})
 		r.Route("/playlists", func(r chi.Router) {
 			r.Get("/", h.ListPlaylists)
 			r.Post("/", h.CreatePlaylist)

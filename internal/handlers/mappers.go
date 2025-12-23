@@ -291,6 +291,23 @@ func taskTransitionsDTOFromDB(rows []db.TaskTransition) []TaskTransitionDTO {
 	return out
 }
 
+func settingDTOFromDB(s db.Setting) SettingDTO {
+	return SettingDTO{
+		Key:       s.Key,
+		Value:     s.Value,
+		CreatedAt: s.CreatedAt,
+		UpdatedAt: s.UpdatedAt,
+	}
+}
+
+func settingsDTOFromDB(rows []db.Setting) []SettingDTO {
+	out := make([]SettingDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, settingDTOFromDB(row))
+	}
+	return out
+}
+
 func tagsFromNullString(ns dbtypes.NullString) []string {
 	if !ns.Valid {
 		return nil
