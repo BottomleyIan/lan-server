@@ -88,6 +88,26 @@ func (q *Queries) ListJournalsByMonth(ctx context.Context, arg ListJournalsByMon
 	return items, nil
 }
 
+const updateJournalLastChecked = `-- name: UpdateJournalLastChecked :exec
+UPDATE journals
+SET last_checked_at = CURRENT_TIMESTAMP
+WHERE year = ?
+  AND month = ?
+  AND day = ?
+`
+
+type UpdateJournalLastCheckedParams struct {
+	Year  int64
+	Month int64
+	Day   int64
+}
+
+// Update journal last checked timestamp
+func (q *Queries) UpdateJournalLastChecked(ctx context.Context, arg UpdateJournalLastCheckedParams) error {
+	_, err := q.db.ExecContext(ctx, updateJournalLastChecked, arg.Year, arg.Month, arg.Day)
+	return err
+}
+
 const upsertJournal = `-- name: UpsertJournal :one
 INSERT INTO journals (year, month, day, size_bytes, hash, tags, last_checked_at)
 VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)

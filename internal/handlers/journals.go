@@ -98,6 +98,29 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 
 		hash := sha256.Sum256(data)
 		hashHex := hex.EncodeToString(hash[:])
+		existing, err := queries.GetJournalByDate(r.Context(), db.GetJournalByDateParams{
+			Year:  int64(fileYear),
+			Month: int64(fileMonth),
+			Day:   int64(fileDay),
+		})
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			_ = tx.Rollback()
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		if err == nil && existing.SizeBytes == info.Size() && existing.Hash == hashHex {
+			if err := queries.UpdateJournalLastChecked(r.Context(), db.UpdateJournalLastCheckedParams{
+				Year:  int64(fileYear),
+				Month: int64(fileMonth),
+				Day:   int64(fileDay),
+			}); err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			continue
+		}
+
 		tags := extractJournalTags(string(data))
 		tagsJSON, err := json.Marshal(tags)
 		if err != nil {

@@ -6,6 +6,14 @@ WHERE year = ?
   AND month = ?
   AND day = ?;
 
+-- Update journal last checked timestamp
+-- name: UpdateJournalLastChecked :exec
+UPDATE journals
+SET last_checked_at = CURRENT_TIMESTAMP
+WHERE year = ?
+  AND month = ?
+  AND day = ?;
+
 -- List journals for a month
 -- name: ListJournalsByMonth :many
 SELECT *
