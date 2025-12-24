@@ -106,6 +106,7 @@ type TaskDTO struct {
 	Title       string    `json:"title"`
 	Body        *string   `json:"body,omitempty"`
 	Status      string    `json:"status"`
+	Tags        []string  `json:"tags,omitempty"`
 	ScheduledAt *string   `json:"scheduled_at,omitempty"`
 	DeadlineAt  *string   `json:"deadline_at,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -122,6 +123,20 @@ type SettingDTO struct {
 type SettingKeyDTO struct {
 	Key         string `json:"key"`
 	Description string `json:"description"`
+}
+
+type MetalPriceDTO struct {
+	Name              string  `json:"name"`
+	GBP               float64 `json:"gbp"`
+	USD               float64 `json:"usd"`
+	Symbol            string  `json:"symbol"`
+	UpdatedAt         string  `json:"updatedAt"`
+	UpdatedAtReadable string  `json:"updatedAtReadable"`
+}
+
+type MetalsPricesDTO struct {
+	Gold   MetalPriceDTO `json:"gold"`
+	Silver MetalPriceDTO `json:"silver"`
 }
 
 type JournalDTO struct {

@@ -263,6 +263,7 @@ func taskDTOFromDB(t db.Task) TaskDTO {
 		Title:       t.Title,
 		Body:        stringPtrFromNullString(t.Body),
 		Status:      mapTaskStatus(t.Status),
+		Tags:        tagsFromJSONString(t.Tags),
 		ScheduledAt: logseqTimestampToISO(stringPtrFromNullString(t.ScheduledAt)),
 		DeadlineAt:  logseqTimestampToISO(stringPtrFromNullString(t.DeadlineAt)),
 		CreatedAt:   t.CreatedAt,

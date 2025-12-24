@@ -20,11 +20,12 @@ INSERT INTO tasks (
   title,
   body,
   status,
+  tags,
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, year, month, day, position, title, body, status, scheduled_at, deadline_at, created_at, updated_at
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, year, month, day, position, title, body, status, tags, scheduled_at, deadline_at, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -35,6 +36,7 @@ type CreateTaskParams struct {
 	Title       string
 	Body        dbtypes.NullString
 	Status      string
+	Tags        string
 	ScheduledAt dbtypes.NullString
 	DeadlineAt  dbtypes.NullString
 }
@@ -49,6 +51,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.Title,
 		arg.Body,
 		arg.Status,
+		arg.Tags,
 		arg.ScheduledAt,
 		arg.DeadlineAt,
 	)
@@ -62,6 +65,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Title,
 		&i.Body,
 		&i.Status,
+		&i.Tags,
 		&i.ScheduledAt,
 		&i.DeadlineAt,
 		&i.CreatedAt,
@@ -105,13 +109,39 @@ func (q *Queries) DeleteTasksByMonth(ctx context.Context, arg DeleteTasksByMonth
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT id, year, month, day, position, title, body, status, scheduled_at, deadline_at, created_at, updated_at
+SELECT id, year, month, day, position, title, body, status, tags, scheduled_at, deadline_at, created_at, updated_at
 FROM tasks
+WHERE (?1 IS NULL OR year = ?1)
+  AND (?2 IS NULL OR month = ?2)
+  AND (
+    ?3 IS NULL
+    OR status IN (SELECT value FROM json_each(sqlc.narg('statuses')))
+  )
+  AND (
+    ?4 IS NULL
+    OR EXISTS (
+      SELECT 1
+      FROM json_each(tasks.tags)
+      WHERE value IN (SELECT value FROM json_each(sqlc.narg('tags')))
+    )
+  )
 ORDER BY year DESC, month DESC, day DESC, position ASC
 `
 
-func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, listTasks)
+type ListTasksParams struct {
+	Year     interface{}
+	Month    interface{}
+	Statuses interface{}
+	Tags     interface{}
+}
+
+func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, listTasks,
+		arg.Year,
+		arg.Month,
+		arg.Statuses,
+		arg.Tags,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +158,7 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 			&i.Title,
 			&i.Body,
 			&i.Status,
+			&i.Tags,
 			&i.ScheduledAt,
 			&i.DeadlineAt,
 			&i.CreatedAt,

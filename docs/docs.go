@@ -973,6 +973,25 @@ const docTemplate = `{
                 }
             }
         },
+        "/prices/metals": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prices"
+                ],
+                "summary": "Get current gold and silver prices",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.MetalsPricesDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/settings": {
             "get": {
                 "produces": [
@@ -1143,6 +1162,50 @@ const docTemplate = `{
                     "tasks"
                 ],
                 "summary": "List tasks",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Statuses filter (comma-separated or repeated)",
+                        "name": "statuses",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Status filter (comma-separated or repeated)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Tags filter (comma-separated or repeated)",
+                        "name": "tags",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by year",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by month (1-12)",
+                        "name": "month",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1650,6 +1713,40 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.MetalPriceDTO": {
+            "type": "object",
+            "properties": {
+                "gbp": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "updatedAtReadable": {
+                    "type": "string"
+                },
+                "usd": {
+                    "type": "number"
+                }
+            }
+        },
+        "handlers.MetalsPricesDTO": {
+            "type": "object",
+            "properties": {
+                "gold": {
+                    "$ref": "#/definitions/handlers.MetalPriceDTO"
+                },
+                "silver": {
+                    "$ref": "#/definitions/handlers.MetalPriceDTO"
+                }
+            }
+        },
         "handlers.PlaylistDTO": {
             "type": "object",
             "properties": {
@@ -1777,6 +1874,12 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "title": {
                     "type": "string"

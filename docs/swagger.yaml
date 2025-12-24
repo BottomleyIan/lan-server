@@ -114,6 +114,28 @@ definitions:
       year:
         type: integer
     type: object
+  handlers.MetalPriceDTO:
+    properties:
+      gbp:
+        type: number
+      name:
+        type: string
+      symbol:
+        type: string
+      updatedAt:
+        type: string
+      updatedAtReadable:
+        type: string
+      usd:
+        type: number
+    type: object
+  handlers.MetalsPricesDTO:
+    properties:
+      gold:
+        $ref: '#/definitions/handlers.MetalPriceDTO'
+      silver:
+        $ref: '#/definitions/handlers.MetalPriceDTO'
+    type: object
   handlers.PlaylistDTO:
     properties:
       created_at:
@@ -198,6 +220,10 @@ definitions:
         type: string
       status:
         type: string
+      tags:
+        items:
+          type: string
+        type: array
       title:
         type: string
       updated_at:
@@ -987,6 +1013,18 @@ paths:
       summary: Update playlist track position
       tags:
       - playlists
+  /prices/metals:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.MetalsPricesDTO'
+      summary: Get current gold and silver prices
+      tags:
+      - prices
   /settings:
     get:
       produces:
@@ -1093,6 +1131,36 @@ paths:
       - settings
   /tasks:
     get:
+      parameters:
+      - collectionFormat: csv
+        description: Statuses filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: statuses
+        type: array
+      - collectionFormat: csv
+        description: Status filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: status
+        type: array
+      - collectionFormat: csv
+        description: Tags filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: tags
+        type: array
+      - description: Filter by year
+        in: query
+        name: year
+        type: integer
+      - description: Filter by month (1-12)
+        in: query
+        name: month
+        type: integer
       produces:
       - application/json
       responses:

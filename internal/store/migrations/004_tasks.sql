@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title TEXT NOT NULL,
   body TEXT NULL,
   status TEXT NOT NULL,
+  tags TEXT NOT NULL DEFAULT '[]',
   scheduled_at TEXT NULL,
   deadline_at TEXT NULL,
 

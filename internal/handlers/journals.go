@@ -437,6 +437,7 @@ type logseqTask struct {
 	Title       string
 	Body        string
 	Status      string
+	Tags        []string
 	ScheduledAt string
 	DeadlineAt  string
 }
@@ -492,6 +493,10 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 			continue
 		}
 		body := nullStringFromString(strings.TrimRight(task.Body, "\n"))
+		tagsJSON, err := json.Marshal(task.Tags)
+		if err != nil {
+			return err
+		}
 		scheduled := nullStringFromString(task.ScheduledAt)
 		deadline := nullStringFromString(task.DeadlineAt)
 		if _, err := queries.CreateTask(ctx, db.CreateTaskParams{
@@ -502,6 +507,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 			Title:       title,
 			Body:        body,
 			Status:      task.Status,
+			Tags:        string(tagsJSON),
 			ScheduledAt: scheduled,
 			DeadlineAt:  deadline,
 		}); err != nil {
@@ -517,15 +523,18 @@ func parseLogseqTasks(content string) []logseqTask {
 	tasks := make([]logseqTask, 0)
 	var current *logseqTask
 	var bodyLines []string
+	var tagSet map[string]struct{}
 
 	flush := func() {
 		if current == nil {
 			return
 		}
 		current.Body = strings.Join(bodyLines, "\n")
+		current.Tags = sortedTagsFromSet(tagSet)
 		tasks = append(tasks, *current)
 		current = nil
 		bodyLines = nil
+		tagSet = nil
 	}
 
 	for _, line := range lines {
@@ -544,8 +553,10 @@ func parseLogseqTasks(content string) []logseqTask {
 			if _, ok := logseqTaskStatusSet[status]; !ok {
 				continue
 			}
-			title := strings.TrimSpace(strings.TrimPrefix(rest, status))
-			title = strings.TrimSpace(stripLogseqTags(title))
+			rawTitle := strings.TrimSpace(strings.TrimPrefix(rest, status))
+			tagSet = make(map[string]struct{})
+			collectLogseqTags(tagSet, rawTitle)
+			title := strings.TrimSpace(stripLogseqTags(rawTitle))
 			current = &logseqTask{
 				Title:  title,
 				Status: status,
@@ -556,6 +567,7 @@ func parseLogseqTasks(content string) []logseqTask {
 
 		if current != nil {
 			bodyLines = append(bodyLines, line)
+			collectLogseqTags(tagSet, line)
 			if current.ScheduledAt == "" && strings.HasPrefix(trimmed, "SCHEDULED:") {
 				current.ScheduledAt = parseLogseqTimestamp(trimmed, "SCHEDULED:")
 			}
@@ -571,6 +583,35 @@ func parseLogseqTasks(content string) []logseqTask {
 
 func stripLogseqTags(value string) string {
 	return journalTagRe.ReplaceAllString(value, "")
+}
+
+func collectLogseqTags(target map[string]struct{}, text string) {
+	if target == nil {
+		return
+	}
+	matches := journalTagRe.FindAllStringSubmatch(text, -1)
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		tag := strings.TrimSpace(match[1])
+		if tag == "" {
+			continue
+		}
+		target[tag] = struct{}{}
+	}
+}
+
+func sortedTagsFromSet(tags map[string]struct{}) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(tags))
+	for tag := range tags {
+		out = append(out, tag)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func parseLogseqTimestamp(line, prefix string) string {
