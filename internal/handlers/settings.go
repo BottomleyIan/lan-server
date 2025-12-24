@@ -30,6 +30,10 @@ var settingKeyDefinitions = []SettingKeyDTO{
 		Description: "logseq journals folder",
 	},
 	{
+		Key:         "gold-api.com api",
+		Description: "API key for gold-api.com",
+	},
+	{
 		Key:         "theme",
 		Description: "UI theme name.",
 	},
