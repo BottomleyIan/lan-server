@@ -119,6 +119,9 @@ func main() {
 			r.Get("/{year}/{month}/{day}", h.GetJournalDay)
 			r.Post("/", h.CreateJournalEntry)
 		})
+		r.Route("/prices", func(r chi.Router) {
+			r.Get("/metals", h.GetMetalPrices)
+		})
 		r.Route("/settings", func(r chi.Router) {
 			r.Get("/", h.ListSettings)
 			r.Post("/", h.CreateSetting)
