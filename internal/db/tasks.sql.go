@@ -115,32 +115,32 @@ WHERE (?1 IS NULL OR year = ?1)
   AND (?2 IS NULL OR month = ?2)
   AND (
     ?3 IS NULL
-    OR status IN (SELECT value FROM json_each(sqlc.narg('statuses')))
+    OR status IN (SELECT value FROM json_each(?3))
   )
   AND (
     ?4 IS NULL
     OR EXISTS (
       SELECT 1
       FROM json_each(tasks.tags)
-      WHERE value IN (SELECT value FROM json_each(sqlc.narg('tags')))
+      WHERE value IN (SELECT value FROM json_each(?4))
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC
 `
 
 type ListTasksParams struct {
-	Year     interface{}
-	Month    interface{}
-	Statuses interface{}
-	Tags     interface{}
+	Column1 interface{}
+	Column2 interface{}
+	Column3 interface{}
+	Column4 interface{}
 }
 
 func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
 	rows, err := q.db.QueryContext(ctx, listTasks,
-		arg.Year,
-		arg.Month,
-		arg.Statuses,
-		arg.Tags,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
 	)
 	if err != nil {
 		return nil, err

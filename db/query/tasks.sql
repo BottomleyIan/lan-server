@@ -18,18 +18,18 @@ RETURNING *;
 -- name: ListTasks :many
 SELECT *
 FROM tasks
-WHERE (sqlc.narg('year') IS NULL OR year = sqlc.narg('year'))
-  AND (sqlc.narg('month') IS NULL OR month = sqlc.narg('month'))
+WHERE (?1 IS NULL OR year = ?1)
+  AND (?2 IS NULL OR month = ?2)
   AND (
-    sqlc.narg('statuses') IS NULL
-    OR status IN (SELECT value FROM json_each(sqlc.narg('statuses')))
+    ?3 IS NULL
+    OR status IN (SELECT value FROM json_each(?3))
   )
   AND (
-    sqlc.narg('tags') IS NULL
+    ?4 IS NULL
     OR EXISTS (
       SELECT 1
       FROM json_each(tasks.tags)
-      WHERE value IN (SELECT value FROM json_each(sqlc.narg('tags')))
+      WHERE value IN (SELECT value FROM json_each(?4))
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC;

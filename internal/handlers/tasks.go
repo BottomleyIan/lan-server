@@ -125,10 +125,10 @@ func (h *Handlers) ListTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.App.Queries.ListTasks(r.Context(), db.ListTasksParams{
-		Year:     yearParam,
-		Month:    monthParam,
-		Statuses: statusesParam,
-		Tags:     tagsParam,
+		Column1: yearParam,
+		Column2: monthParam,
+		Column3: statusesParam,
+		Column4: tagsParam,
 	})
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
