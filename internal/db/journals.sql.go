@@ -58,6 +58,35 @@ func (q *Queries) GetJournalByDate(ctx context.Context, arg GetJournalByDatePara
 	return i, err
 }
 
+const listJournalTags = `-- name: ListJournalTags :many
+SELECT tags
+FROM journals
+`
+
+// List all journal tags (raw JSON per journal)
+func (q *Queries) ListJournalTags(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listJournalTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var tags string
+		if err := rows.Scan(&tags); err != nil {
+			return nil, err
+		}
+		items = append(items, tags)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listJournalsByMonth = `-- name: ListJournalsByMonth :many
 SELECT year, month, day, size_bytes, hash, tags, last_checked_at, created_at, updated_at
 FROM journals

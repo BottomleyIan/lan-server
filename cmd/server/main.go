@@ -115,6 +115,7 @@ func main() {
 			r.Post("/", h.CreateTask)
 		})
 		r.Route("/journals", func(r chi.Router) {
+			r.Get("/tags", h.ListJournalTags)
 			r.Get("/{year}/{month}", h.ListJournalsByMonth)
 			r.Get("/{year}/{month}/{day}", h.GetJournalDay)
 			r.Post("/", h.CreateJournalEntry)

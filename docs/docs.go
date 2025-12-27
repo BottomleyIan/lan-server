@@ -541,6 +541,36 @@ const docTemplate = `{
                 }
             }
         },
+        "/journals/tags": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "List journal tags",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Prefix filter on tag",
+                        "name": "startswith",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/journals/{year}/{month}": {
             "get": {
                 "produces": [

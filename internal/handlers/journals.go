@@ -261,6 +261,47 @@ func (h *Handlers) GetJournalDay(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ListJournalTags godoc
+// @Summary List journal tags
+// @Tags journals
+// @Produce json
+// @Param startswith query string false "Prefix filter on tag"
+// @Success 200 {array} string
+// @Router /journals/tags [get]
+func (h *Handlers) ListJournalTags(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	startsWith := strings.TrimSpace(r.URL.Query().Get("startswith"))
+	startsWithLower := strings.ToLower(startsWith)
+
+	rows, err := h.App.Queries.ListJournalTags(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	unique := make(map[string]struct{})
+	for _, raw := range rows {
+		for _, tag := range tagsFromJSONString(raw) {
+			if startsWithLower != "" && !strings.HasPrefix(strings.ToLower(tag), startsWithLower) {
+				continue
+			}
+			unique[tag] = struct{}{}
+		}
+	}
+
+	out := make([]string, 0, len(unique))
+	for tag := range unique {
+		out = append(out, tag)
+	}
+	sort.Strings(out)
+
+	writeJSON(w, out)
+}
+
 func (h *Handlers) journalsFolder(ctx context.Context) (string, bool, error) {
 	setting, err := h.App.Queries.GetSetting(ctx, settingKeyJournalsFolder)
 	if err != nil {

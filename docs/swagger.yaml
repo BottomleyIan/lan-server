@@ -789,6 +789,25 @@ paths:
       summary: Get journal entry for a day
       tags:
       - journals
+  /journals/tags:
+    get:
+      parameters:
+      - description: Prefix filter on tag
+        in: query
+        name: startswith
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List journal tags
+      tags:
+      - journals
   /playlists:
     get:
       produces:

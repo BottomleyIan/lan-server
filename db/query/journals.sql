@@ -28,6 +28,11 @@ WHERE year = ?
   AND month = ?
 ORDER BY day;
 
+-- List all journal tags (raw JSON per journal)
+-- name: ListJournalTags :many
+SELECT tags
+FROM journals;
+
 -- Upsert journal metadata
 -- name: UpsertJournal :one
 INSERT INTO journals (year, month, day, size_bytes, hash, tags, last_checked_at)
