@@ -20,6 +20,23 @@ DELETE FROM journals
 WHERE year = ?
   AND month = ?;
 
+-- List journals with optional filters
+-- name: ListJournalsFiltered :many
+SELECT *
+FROM journals
+WHERE (?1 IS NULL OR year = ?1)
+  AND (?2 IS NULL OR month = ?2)
+  AND (?3 IS NULL OR day = ?3)
+  AND (
+    ?4 IS NULL
+    OR EXISTS (
+      SELECT 1
+      FROM json_each(journals.tags)
+      WHERE value = ?4
+    )
+  )
+ORDER BY year DESC, month DESC, day DESC;
+
 -- List journals for a month
 -- name: ListJournalsByMonth :many
 SELECT *

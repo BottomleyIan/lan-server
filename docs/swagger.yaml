@@ -710,6 +710,37 @@ paths:
       summary: Health check
       tags:
       - system
+  /journal:
+    get:
+      parameters:
+      - description: Filter by year
+        in: query
+        name: year
+        type: integer
+      - description: Filter by month (1-12)
+        in: query
+        name: month
+        type: integer
+      - description: Filter by day (1-31)
+        in: query
+        name: day
+        type: integer
+      - description: Filter by tag
+        in: query
+        name: tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.JournalDTO'
+            type: array
+      summary: List journals
+      tags:
+      - journals
   /journals:
     post:
       consumes:

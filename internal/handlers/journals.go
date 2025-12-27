@@ -261,6 +261,55 @@ func (h *Handlers) GetJournalDay(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ListJournals godoc
+// @Summary List journals
+// @Tags journals
+// @Produce json
+// @Param year query int false "Filter by year"
+// @Param month query int false "Filter by month (1-12)"
+// @Param day query int false "Filter by day (1-31)"
+// @Param tag query string false "Filter by tag"
+// @Success 200 {array} JournalDTO
+// @Router /journal [get]
+func (h *Handlers) ListJournals(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	year, ok := parseOptionalIntQueryParam(w, r, "year", 0, 9999)
+	if !ok {
+		return
+	}
+	month, ok := parseOptionalIntQueryParam(w, r, "month", 1, 12)
+	if !ok {
+		return
+	}
+	day, ok := parseOptionalIntQueryParam(w, r, "day", 1, 31)
+	if !ok {
+		return
+	}
+
+	tag := strings.TrimSpace(r.URL.Query().Get("tag"))
+	var tagParam interface{}
+	if tag != "" {
+		tagParam = tag
+	}
+
+	rows, err := h.App.Queries.ListJournalsFiltered(r.Context(), db.ListJournalsFilteredParams{
+		Column1: year,
+		Column2: month,
+		Column3: day,
+		Column4: tagParam,
+	})
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, journalsDTOFromDB(rows))
+}
+
 // ListJournalTags godoc
 // @Summary List journal tags
 // @Tags journals
@@ -757,6 +806,20 @@ func toLogseqTimestamp(value string) (string, bool) {
 		return date.Format("2006-01-02 Mon"), true
 	}
 	return "", false
+}
+
+func parseOptionalIntQueryParam(w http.ResponseWriter, r *http.Request, key string, min, max int) (*int64, bool) {
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return nil, true
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < min || value > max {
+		http.Error(w, "invalid "+key, http.StatusBadRequest)
+		return nil, false
+	}
+	out := int64(value)
+	return &out, true
 }
 
 func parseISODateTime(value string) (time.Time, bool) {

@@ -134,6 +134,69 @@ func (q *Queries) ListJournalsByMonth(ctx context.Context, arg ListJournalsByMon
 	return items, nil
 }
 
+const listJournalsFiltered = `-- name: ListJournalsFiltered :many
+SELECT year, month, day, size_bytes, hash, tags, last_checked_at, created_at, updated_at
+FROM journals
+WHERE (?1 IS NULL OR year = ?1)
+  AND (?2 IS NULL OR month = ?2)
+  AND (?3 IS NULL OR day = ?3)
+  AND (
+    ?4 IS NULL
+    OR EXISTS (
+      SELECT 1
+      FROM json_each(journals.tags)
+      WHERE value = ?4
+    )
+  )
+ORDER BY year DESC, month DESC, day DESC
+`
+
+type ListJournalsFilteredParams struct {
+	Column1 interface{}
+	Column2 interface{}
+	Column3 interface{}
+	Column4 interface{}
+}
+
+// List journals with optional filters
+func (q *Queries) ListJournalsFiltered(ctx context.Context, arg ListJournalsFilteredParams) ([]Journal, error) {
+	rows, err := q.db.QueryContext(ctx, listJournalsFiltered,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Journal
+	for rows.Next() {
+		var i Journal
+		if err := rows.Scan(
+			&i.Year,
+			&i.Month,
+			&i.Day,
+			&i.SizeBytes,
+			&i.Hash,
+			&i.Tags,
+			&i.LastCheckedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateJournalLastChecked = `-- name: UpdateJournalLastChecked :exec
 UPDATE journals
 SET last_checked_at = CURRENT_TIMESTAMP
