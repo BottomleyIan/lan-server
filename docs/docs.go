@@ -510,7 +510,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/journal": {
+        "/journals": {
             "get": {
                 "produces": [
                     "application/json"
@@ -556,9 +556,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/journals": {
+            },
             "post": {
                 "consumes": [
                     "application/json"

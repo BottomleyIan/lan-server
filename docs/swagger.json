@@ -504,7 +504,7 @@
                 }
             }
         },
-        "/journal": {
+        "/journals": {
             "get": {
                 "produces": [
                     "application/json"
@@ -550,9 +550,7 @@
                         }
                     }
                 }
-            }
-        },
-        "/journals": {
+            },
             "post": {
                 "consumes": [
                     "application/json"

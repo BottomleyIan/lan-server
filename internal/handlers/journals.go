@@ -270,7 +270,7 @@ func (h *Handlers) GetJournalDay(w http.ResponseWriter, r *http.Request) {
 // @Param day query int false "Filter by day (1-31)"
 // @Param tag query string false "Filter by tag"
 // @Success 200 {array} JournalDTO
-// @Router /journal [get]
+// @Router /journals [get]
 func (h *Handlers) ListJournals(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)

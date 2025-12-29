@@ -710,7 +710,7 @@ paths:
       summary: Health check
       tags:
       - system
-  /journal:
+  /journals:
     get:
       parameters:
       - description: Filter by year
@@ -741,7 +741,6 @@ paths:
       summary: List journals
       tags:
       - journals
-  /journals:
     post:
       consumes:
       - application/json
