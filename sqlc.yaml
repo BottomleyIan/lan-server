@@ -135,6 +135,11 @@ sql:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullString"
+          - column: "tasks.status"
+            go_type:
+              import: "bottomley.ian/musicserver/internal/dbtypes"
+              package: "dbtypes"
+              type: "NullString"
           - column: "tasks.scheduled_at"
             go_type:
               import: "bottomley.ian/musicserver/internal/dbtypes"

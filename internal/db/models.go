@@ -85,9 +85,11 @@ type Task struct {
 	Day         int64
 	Position    int64
 	Title       string
+	RawLine     string
 	Body        dbtypes.NullString
-	Status      string
+	Status      dbtypes.NullString
 	Tags        string
+	Type        string
 	ScheduledAt dbtypes.NullString
 	DeadlineAt  dbtypes.NullString
 	CreatedAt   time.Time

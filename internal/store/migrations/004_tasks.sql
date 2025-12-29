@@ -10,9 +10,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   day INTEGER NOT NULL,
   position INTEGER NOT NULL,
   title TEXT NOT NULL,
+  raw_line TEXT NOT NULL,
   body TEXT NULL,
-  status TEXT NOT NULL,
+  status TEXT NULL,
   tags TEXT NOT NULL DEFAULT '[]',
+  type TEXT NOT NULL,
   scheduled_at TEXT NULL,
   deadline_at TEXT NULL,
 

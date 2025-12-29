@@ -136,6 +136,35 @@ definitions:
       silver:
         $ref: '#/definitions/handlers.MetalPriceDTO'
     type: object
+  handlers.NoteDTO:
+    properties:
+      body:
+        type: string
+      created_at:
+        type: string
+      day:
+        type: integer
+      id:
+        type: integer
+      month:
+        type: integer
+      position:
+        type: integer
+      raw_line:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      year:
+        type: integer
+    type: object
   handlers.PlaylistDTO:
     properties:
       created_at:
@@ -838,6 +867,37 @@ paths:
       summary: List journal tags
       tags:
       - journals
+  /notes:
+    get:
+      parameters:
+      - description: Filter by year
+        in: query
+        name: year
+        type: integer
+      - description: Filter by month (1-12)
+        in: query
+        name: month
+        type: integer
+      - description: Filter by day (1-31)
+        in: query
+        name: day
+        type: integer
+      - description: Filter by tag
+        in: query
+        name: tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.NoteDTO'
+            type: array
+      summary: List notes
+      tags:
+      - notes
   /playlists:
     get:
       produces:

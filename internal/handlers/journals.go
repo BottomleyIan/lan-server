@@ -523,11 +523,13 @@ func extractJournalTags(content string) []string {
 	return out
 }
 
-type logseqTask struct {
+type logseqEntry struct {
 	Title       string
+	RawLine     string
 	Body        string
 	Status      string
 	Tags        []string
+	Type        string
 	ScheduledAt string
 	DeadlineAt  string
 }
@@ -576,28 +578,31 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 		return err
 	}
 
-	tasks := parseLogseqTasks(string(data))
-	for idx, task := range tasks {
-		title := strings.TrimSpace(task.Title)
+	entries := parseLogseqEntries(string(data))
+	for idx, entry := range entries {
+		title := strings.TrimSpace(entry.Title)
 		if title == "" {
 			continue
 		}
-		body := nullStringFromString(strings.TrimRight(task.Body, "\n"))
-		tagsJSON, err := json.Marshal(task.Tags)
+		body := nullStringFromString(strings.TrimRight(entry.Body, "\n"))
+		tagsJSON, err := json.Marshal(entry.Tags)
 		if err != nil {
 			return err
 		}
-		scheduled := nullStringFromString(task.ScheduledAt)
-		deadline := nullStringFromString(task.DeadlineAt)
+		scheduled := nullStringFromString(entry.ScheduledAt)
+		deadline := nullStringFromString(entry.DeadlineAt)
+		status := nullStringFromString(entry.Status)
 		if _, err := queries.CreateTask(ctx, db.CreateTaskParams{
 			Year:        int64(year),
 			Month:       int64(month),
 			Day:         int64(day),
 			Position:    int64(idx),
 			Title:       title,
+			RawLine:     entry.RawLine,
 			Body:        body,
-			Status:      task.Status,
+			Status:      status,
 			Tags:        string(tagsJSON),
+			Type:        entry.Type,
 			ScheduledAt: scheduled,
 			DeadlineAt:  deadline,
 		}); err != nil {
@@ -608,10 +613,10 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 	return nil
 }
 
-func parseLogseqTasks(content string) []logseqTask {
+func parseLogseqEntries(content string) []logseqEntry {
 	lines := strings.Split(content, "\n")
-	tasks := make([]logseqTask, 0)
-	var current *logseqTask
+	entries := make([]logseqEntry, 0)
+	var current *logseqEntry
 	var bodyLines []string
 	var tagSet map[string]struct{}
 
@@ -621,7 +626,7 @@ func parseLogseqTasks(content string) []logseqTask {
 		}
 		current.Body = strings.Join(bodyLines, "\n")
 		current.Tags = sortedTagsFromSet(tagSet)
-		tasks = append(tasks, *current)
+		entries = append(entries, *current)
 		current = nil
 		bodyLines = nil
 		tagSet = nil
@@ -640,16 +645,23 @@ func parseLogseqTasks(content string) []logseqTask {
 				continue
 			}
 			status := parts[0]
-			if _, ok := logseqTaskStatusSet[status]; !ok {
-				continue
+			rawLine := strings.TrimSpace(rest)
+			entryType := "misc"
+			rawTitle := rest
+			entryStatus := ""
+			if _, ok := logseqTaskStatusSet[status]; ok {
+				entryType = "task"
+				entryStatus = status
+				rawTitle = strings.TrimSpace(strings.TrimPrefix(rest, status))
 			}
-			rawTitle := strings.TrimSpace(strings.TrimPrefix(rest, status))
 			tagSet = make(map[string]struct{})
 			collectLogseqTags(tagSet, rawTitle)
 			title := strings.TrimSpace(stripLogseqTags(rawTitle))
-			current = &logseqTask{
-				Title:  title,
-				Status: status,
+			current = &logseqEntry{
+				Title:   title,
+				RawLine: rawLine,
+				Status:  entryStatus,
+				Type:    entryType,
 			}
 			bodyLines = []string{}
 			continue
@@ -668,7 +680,7 @@ func parseLogseqTasks(content string) []logseqTask {
 	}
 
 	flush()
-	return tasks
+	return entries
 }
 
 func stripLogseqTags(value string) string {

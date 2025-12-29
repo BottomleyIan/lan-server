@@ -254,6 +254,10 @@ func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *TrackDTO) PlaylistTrackD
 }
 
 func taskDTOFromDB(t db.Task) TaskDTO {
+	status := ""
+	if t.Status.Valid {
+		status = mapTaskStatus(t.Status.String)
+	}
 	return TaskDTO{
 		ID:          t.ID,
 		Year:        t.Year,
@@ -262,7 +266,7 @@ func taskDTOFromDB(t db.Task) TaskDTO {
 		Position:    t.Position,
 		Title:       t.Title,
 		Body:        stringPtrFromNullString(t.Body),
-		Status:      mapTaskStatus(t.Status),
+		Status:      status,
 		Tags:        tagsFromJSONString(t.Tags),
 		ScheduledAt: logseqTimestampToISO(stringPtrFromNullString(t.ScheduledAt)),
 		DeadlineAt:  logseqTimestampToISO(stringPtrFromNullString(t.DeadlineAt)),
@@ -275,6 +279,31 @@ func tasksDTOFromDB(rows []db.Task) []TaskDTO {
 	out := make([]TaskDTO, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, taskDTOFromDB(row))
+	}
+	return out
+}
+
+func noteDTOFromDB(t db.Task) NoteDTO {
+	return NoteDTO{
+		ID:        t.ID,
+		Year:      t.Year,
+		Month:     t.Month,
+		Day:       t.Day,
+		Position:  t.Position,
+		Title:     t.Title,
+		RawLine:   t.RawLine,
+		Body:      stringPtrFromNullString(t.Body),
+		Tags:      tagsFromJSONString(t.Tags),
+		Type:      t.Type,
+		CreatedAt: t.CreatedAt,
+		UpdatedAt: t.UpdatedAt,
+	}
+}
+
+func notesDTOFromDB(rows []db.Task) []NoteDTO {
+	out := make([]NoteDTO, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, noteDTOFromDB(row))
 	}
 	return out
 }

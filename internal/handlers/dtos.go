@@ -113,6 +113,21 @@ type TaskDTO struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type NoteDTO struct {
+	ID        int64     `json:"id"`
+	Year      int64     `json:"year"`
+	Month     int64     `json:"month"`
+	Day       int64     `json:"day"`
+	Position  int64     `json:"position"`
+	Title     string    `json:"title"`
+	RawLine   string    `json:"raw_line"`
+	Body      *string   `json:"body,omitempty"`
+	Tags      []string  `json:"tags,omitempty"`
+	Type      string    `json:"type"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type SettingDTO struct {
 	Key       string    `json:"key"`
 	Value     string    `json:"value"`

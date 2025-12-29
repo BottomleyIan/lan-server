@@ -114,6 +114,9 @@ func main() {
 			r.Get("/", h.ListTasks)
 			r.Post("/", h.CreateTask)
 		})
+		r.Route("/notes", func(r chi.Router) {
+			r.Get("/", h.ListNotes)
+		})
 		r.Route("/journals", func(r chi.Router) {
 			r.Get("/", h.ListJournals)
 			r.Get("/tags", h.ListJournalTags)

@@ -18,14 +18,16 @@ INSERT INTO tasks (
   day,
   position,
   title,
+  raw_line,
   body,
   status,
   tags,
+  type,
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, year, month, day, position, title, body, status, tags, scheduled_at, deadline_at, created_at, updated_at
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -34,9 +36,11 @@ type CreateTaskParams struct {
 	Day         int64
 	Position    int64
 	Title       string
+	RawLine     string
 	Body        dbtypes.NullString
-	Status      string
+	Status      dbtypes.NullString
 	Tags        string
+	Type        string
 	ScheduledAt dbtypes.NullString
 	DeadlineAt  dbtypes.NullString
 }
@@ -49,9 +53,11 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.Day,
 		arg.Position,
 		arg.Title,
+		arg.RawLine,
 		arg.Body,
 		arg.Status,
 		arg.Tags,
+		arg.Type,
 		arg.ScheduledAt,
 		arg.DeadlineAt,
 	)
@@ -63,9 +69,11 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Day,
 		&i.Position,
 		&i.Title,
+		&i.RawLine,
 		&i.Body,
 		&i.Status,
 		&i.Tags,
+		&i.Type,
 		&i.ScheduledAt,
 		&i.DeadlineAt,
 		&i.CreatedAt,
@@ -108,10 +116,80 @@ func (q *Queries) DeleteTasksByMonth(ctx context.Context, arg DeleteTasksByMonth
 	return err
 }
 
-const listTasks = `-- name: ListTasks :many
-SELECT id, year, month, day, position, title, body, status, tags, scheduled_at, deadline_at, created_at, updated_at
+const listNotes = `-- name: ListNotes :many
+SELECT id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
 FROM tasks
-WHERE (?1 IS NULL OR year = ?1)
+WHERE status IS NULL
+  AND (?1 IS NULL OR year = ?1)
+  AND (?2 IS NULL OR month = ?2)
+  AND (?3 IS NULL OR day = ?3)
+  AND (
+    ?4 IS NULL
+    OR EXISTS (
+      SELECT 1
+      FROM json_each(tasks.tags)
+      WHERE value = ?4
+    )
+  )
+ORDER BY year DESC, month DESC, day DESC, position ASC
+`
+
+type ListNotesParams struct {
+	Column1 interface{}
+	Column2 interface{}
+	Column3 interface{}
+	Column4 interface{}
+}
+
+func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, listNotes,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.Year,
+			&i.Month,
+			&i.Day,
+			&i.Position,
+			&i.Title,
+			&i.RawLine,
+			&i.Body,
+			&i.Status,
+			&i.Tags,
+			&i.Type,
+			&i.ScheduledAt,
+			&i.DeadlineAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTasks = `-- name: ListTasks :many
+SELECT id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+FROM tasks
+WHERE status IS NOT NULL
+  AND (?1 IS NULL OR year = ?1)
   AND (?2 IS NULL OR month = ?2)
   AND (
     ?3 IS NULL
@@ -156,9 +234,11 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, e
 			&i.Day,
 			&i.Position,
 			&i.Title,
+			&i.RawLine,
 			&i.Body,
 			&i.Status,
 			&i.Tags,
+			&i.Type,
 			&i.ScheduledAt,
 			&i.DeadlineAt,
 			&i.CreatedAt,
