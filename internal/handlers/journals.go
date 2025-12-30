@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"hash/fnv"
 	"io"
 	"net/http"
 	"os"
@@ -587,6 +589,8 @@ func extractJournalTags(content string) []string {
 type logseqEntry struct {
 	Title       string
 	RawLine     string
+	RawBlock    string
+	Hash        string
 	Body        string
 	Status      string
 	Tags        []string
@@ -660,6 +664,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 			Position:    int64(idx),
 			Title:       title,
 			RawLine:     entry.RawLine,
+			Hash:        entry.Hash,
 			Body:        body,
 			Status:      status,
 			Tags:        string(tagsJSON),
@@ -687,6 +692,8 @@ func parseLogseqEntries(content string) []logseqEntry {
 		}
 		current.Body = strings.Join(bodyLines, "\n")
 		current.Tags = sortedTagsFromSet(tagSet)
+		current.RawBlock = buildLogseqBlock(current.RawLine, bodyLines)
+		current.Hash = hashLogseqBlock(current.RawBlock)
 		entries = append(entries, *current)
 		current = nil
 		bodyLines = nil
@@ -706,7 +713,7 @@ func parseLogseqEntries(content string) []logseqEntry {
 				continue
 			}
 			status := parts[0]
-			rawLine := strings.TrimSpace(rest)
+			rawLine := line
 			entryType := "misc"
 			rawTitle := rest
 			entryStatus := ""
@@ -742,6 +749,18 @@ func parseLogseqEntries(content string) []logseqEntry {
 
 	flush()
 	return entries
+}
+
+func parseLogseqEntryBlock(raw string) (logseqEntry, bool) {
+	trimmed := strings.TrimRight(raw, "\n")
+	if strings.TrimSpace(trimmed) == "" {
+		return logseqEntry{}, false
+	}
+	entries := parseLogseqEntries(trimmed)
+	if len(entries) != 1 {
+		return logseqEntry{}, false
+	}
+	return entries[0], true
 }
 
 func stripLogseqTags(value string) string {
@@ -791,6 +810,20 @@ func nullStringFromString(value string) dbtypes.NullString {
 		return dbtypes.NullString{}
 	}
 	return dbtypes.NullString{String: trimmed, Valid: true}
+}
+
+func buildLogseqBlock(firstLine string, bodyLines []string) string {
+	block := firstLine
+	if len(bodyLines) == 0 {
+		return block
+	}
+	return block + "\n" + strings.Join(bodyLines, "\n")
+}
+
+func hashLogseqBlock(block string) string {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(block))
+	return fmt.Sprintf("%x", h.Sum64())
 }
 
 func renderJournalEntry(tags []string, description string, body *string) string {

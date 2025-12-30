@@ -61,6 +61,7 @@ type JournalEntry struct {
 	Position    int64
 	Title       string
 	RawLine     string
+	Hash        string
 	Body        dbtypes.NullString
 	Status      dbtypes.NullString
 	Tags        string

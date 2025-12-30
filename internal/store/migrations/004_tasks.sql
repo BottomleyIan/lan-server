@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   position INTEGER NOT NULL,
   title TEXT NOT NULL,
   raw_line TEXT NOT NULL,
+  hash TEXT NOT NULL,
   body TEXT NULL,
   status TEXT NULL,
   tags TEXT NOT NULL DEFAULT '[]',

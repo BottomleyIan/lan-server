@@ -170,6 +170,8 @@ definitions:
         type: string
       day:
         type: integer
+      hash:
+        type: string
       id:
         type: integer
       month:
@@ -264,6 +266,8 @@ definitions:
       day:
         type: integer
       deadline_at:
+        type: string
+      hash:
         type: string
       id:
         type: integer
@@ -379,6 +383,17 @@ definitions:
           type: string
         type: array
     type: object
+  handlers.createNoteRequest:
+    properties:
+      body:
+        type: string
+      description:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
   handlers.createPlaylistRequest:
     properties:
       name:
@@ -406,6 +421,11 @@ definitions:
   handlers.updateArtistRequest:
     properties:
       name:
+        type: string
+    type: object
+  handlers.updateJournalEntryRequest:
+    properties:
+      raw:
         type: string
     type: object
   handlers.updatePlaylistTrackRequest:
@@ -991,6 +1011,98 @@ paths:
       summary: List notes
       tags:
       - notes
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Note payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createNoteRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Append a note entry for today
+      tags:
+      - notes
+  /notes/{year}/{month}/{day}/{hash}:
+    delete:
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete note by hash
+      tags:
+      - notes
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      - description: Entry hash for concurrency
+        in: header
+        name: If-Match
+        required: true
+        type: string
+      - description: Updated entry payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateJournalEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoteDTO'
+      summary: Update note by hash
+      tags:
+      - notes
   /playlists:
     get:
       produces:
@@ -1395,6 +1507,80 @@ paths:
         "204":
           description: No Content
       summary: Append a task entry for today
+      tags:
+      - tasks
+  /tasks/{year}/{month}/{day}/{hash}:
+    delete:
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete task by hash
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      - description: Entry hash for concurrency
+        in: header
+        name: If-Match
+        required: true
+        type: string
+      - description: Updated entry payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateJournalEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TaskDTO'
+      summary: Update task by hash
       tags:
       - tasks
   /tracks:

@@ -853,6 +853,143 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notes"
+                ],
+                "summary": "Append a note entry for today",
+                "parameters": [
+                    {
+                        "description": "Note payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.createNoteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/notes/{year}/{month}/{day}/{hash}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notes"
+                ],
+                "summary": "Update note by hash",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash for concurrency",
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated entry payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateJournalEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoteDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "notes"
+                ],
+                "summary": "Delete note by hash",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
             }
         },
         "/playlists": {
@@ -1479,6 +1616,115 @@ const docTemplate = `{
                 }
             }
         },
+        "/tasks/{year}/{month}/{day}/{hash}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Update task by hash",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash for concurrency",
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated entry payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateJournalEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TaskDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Delete task by hash",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/tracks": {
             "get": {
                 "description": "List all non-deleted tracks",
@@ -2031,6 +2277,9 @@ const docTemplate = `{
                 "day": {
                     "type": "integer"
                 },
+                "hash": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -2174,6 +2423,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "deadline_at": {
+                    "type": "string"
+                },
+                "hash": {
                     "type": "string"
                 },
                 "id": {
@@ -2347,6 +2599,23 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.createNoteRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "handlers.createPlaylistRequest": {
             "type": "object",
             "properties": {
@@ -2389,6 +2658,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.updateJournalEntryRequest": {
+            "type": "object",
+            "properties": {
+                "raw": {
                     "type": "string"
                 }
             }

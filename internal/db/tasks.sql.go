@@ -19,6 +19,7 @@ INSERT INTO journal_entries (
   position,
   title,
   raw_line,
+  hash,
   body,
   status,
   tags,
@@ -26,8 +27,8 @@ INSERT INTO journal_entries (
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -37,6 +38,7 @@ type CreateTaskParams struct {
 	Position    int64
 	Title       string
 	RawLine     string
+	Hash        string
 	Body        dbtypes.NullString
 	Status      dbtypes.NullString
 	Tags        string
@@ -54,6 +56,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Journal
 		arg.Position,
 		arg.Title,
 		arg.RawLine,
+		arg.Hash,
 		arg.Body,
 		arg.Status,
 		arg.Tags,
@@ -70,6 +73,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Journal
 		&i.Position,
 		&i.Title,
 		&i.RawLine,
+		&i.Hash,
 		&i.Body,
 		&i.Status,
 		&i.Tags,
@@ -116,8 +120,54 @@ func (q *Queries) DeleteTasksByMonth(ctx context.Context, arg DeleteTasksByMonth
 	return err
 }
 
+const getJournalEntryByDateHash = `-- name: GetJournalEntryByDateHash :one
+SELECT id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+FROM journal_entries
+WHERE year = ?
+  AND month = ?
+  AND day = ?
+  AND hash = ?
+LIMIT 1
+`
+
+type GetJournalEntryByDateHashParams struct {
+	Year  int64
+	Month int64
+	Day   int64
+	Hash  string
+}
+
+func (q *Queries) GetJournalEntryByDateHash(ctx context.Context, arg GetJournalEntryByDateHashParams) (JournalEntry, error) {
+	row := q.db.QueryRowContext(ctx, getJournalEntryByDateHash,
+		arg.Year,
+		arg.Month,
+		arg.Day,
+		arg.Hash,
+	)
+	var i JournalEntry
+	err := row.Scan(
+		&i.ID,
+		&i.Year,
+		&i.Month,
+		&i.Day,
+		&i.Position,
+		&i.Title,
+		&i.RawLine,
+		&i.Hash,
+		&i.Body,
+		&i.Status,
+		&i.Tags,
+		&i.Type,
+		&i.ScheduledAt,
+		&i.DeadlineAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listNotes = `-- name: ListNotes :many
-SELECT id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+SELECT id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
 FROM journal_entries
 WHERE status IS NULL
   AND (?1 IS NULL OR year = ?1)
@@ -163,6 +213,7 @@ func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]Journal
 			&i.Position,
 			&i.Title,
 			&i.RawLine,
+			&i.Hash,
 			&i.Body,
 			&i.Status,
 			&i.Tags,
@@ -186,7 +237,7 @@ func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]Journal
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+SELECT id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
 FROM journal_entries
 WHERE status IS NOT NULL
   AND (
@@ -253,6 +304,7 @@ func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Journal
 			&i.Position,
 			&i.Title,
 			&i.RawLine,
+			&i.Hash,
 			&i.Body,
 			&i.Status,
 			&i.Tags,

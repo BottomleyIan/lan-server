@@ -112,10 +112,15 @@ func main() {
 		})
 		r.Route("/tasks", func(r chi.Router) {
 			r.Get("/", h.ListTasks)
+			r.Put("/{year}/{month}/{day}/{hash}", h.UpdateTaskByHash)
+			r.Delete("/{year}/{month}/{day}/{hash}", h.DeleteTaskByHash)
 			r.Post("/", h.CreateTask)
 		})
 		r.Route("/notes", func(r chi.Router) {
 			r.Get("/", h.ListNotes)
+			r.Post("/", h.CreateNote)
+			r.Put("/{year}/{month}/{day}/{hash}", h.UpdateNoteByHash)
+			r.Delete("/{year}/{month}/{day}/{hash}", h.DeleteNoteByHash)
 		})
 		r.Route("/calendar", func(r chi.Router) {
 			r.Get("/", h.GetCalendarDay)

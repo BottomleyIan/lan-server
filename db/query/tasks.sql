@@ -7,6 +7,7 @@ INSERT INTO journal_entries (
   position,
   title,
   raw_line,
+  hash,
   body,
   status,
   tags,
@@ -14,7 +15,7 @@ INSERT INTO journal_entries (
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListTasks :many
@@ -52,6 +53,15 @@ WHERE status IS NOT NULL
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC;
+
+-- name: GetJournalEntryByDateHash :one
+SELECT *
+FROM journal_entries
+WHERE year = ?
+  AND month = ?
+  AND day = ?
+  AND hash = ?
+LIMIT 1;
 
 -- name: ListNotes :many
 SELECT *

@@ -1,12 +1,19 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
 )
+
+type createNoteRequest struct {
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	Body        *string  `json:"body,omitempty"`
+}
 
 // ListNotes godoc
 // @Summary List notes
@@ -64,4 +71,43 @@ func (h *Handlers) ListNotes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, notesDTOFromDB(rows))
+}
+
+// CreateNote godoc
+// @Summary Append a note entry for today
+// @Tags notes
+// @Accept json
+// @Produce json
+// @Param request body createNoteRequest true "Note payload"
+// @Success 204
+// @Router /notes [post]
+func (h *Handlers) CreateNote(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body createNoteRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	description := strings.TrimSpace(body.Description)
+	if description == "" {
+		http.Error(w, "description required", http.StatusBadRequest)
+		return
+	}
+
+	entry := renderJournalEntry(body.Tags, description, body.Body)
+	if err := h.appendToTodayJournal(r.Context(), entry); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

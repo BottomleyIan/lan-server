@@ -107,6 +107,7 @@ type TaskDTO struct {
 	Body        *string   `json:"body,omitempty"`
 	Status      string    `json:"status"`
 	Tags        []string  `json:"tags,omitempty"`
+	Hash        string    `json:"hash"`
 	ScheduledAt *string   `json:"scheduled_at,omitempty"`
 	DeadlineAt  *string   `json:"deadline_at,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -121,6 +122,7 @@ type NoteDTO struct {
 	Position  int64     `json:"position"`
 	Title     string    `json:"title"`
 	RawLine   string    `json:"raw_line"`
+	Hash      string    `json:"hash"`
 	Body      *string   `json:"body,omitempty"`
 	Tags      []string  `json:"tags,omitempty"`
 	Type      string    `json:"type"`
@@ -140,6 +142,10 @@ type JournalAssetDTO struct {
 	Path     string `json:"path"`
 	Filename string `json:"filename"`
 	Size     int64  `json:"size_bytes"`
+}
+
+type updateJournalEntryRequest struct {
+	Raw string `json:"raw"`
 }
 
 type SettingDTO struct {
