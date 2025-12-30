@@ -642,7 +642,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 	entries := parseLogseqEntries(string(data))
 	for idx, entry := range entries {
 		title := strings.TrimSpace(entry.Title)
-		if title == "" {
+		if entry.Type == "task" && title == "" {
 			continue
 		}
 		body := nullStringFromString(strings.TrimRight(entry.Body, "\n"))
