@@ -50,6 +50,23 @@ definitions:
       name:
         type: string
     type: object
+  handlers.DayViewDTO:
+    properties:
+      day:
+        type: integer
+      month:
+        type: integer
+      notes:
+        items:
+          $ref: '#/definitions/handlers.NoteDTO'
+        type: array
+      tasks:
+        items:
+          $ref: '#/definitions/handlers.TaskDTO'
+        type: array
+      year:
+        type: integer
+    type: object
   handlers.FolderDTO:
     properties:
       available:
@@ -79,6 +96,15 @@ definitions:
         type: string
       time:
         type: string
+    type: object
+  handlers.JournalAssetDTO:
+    properties:
+      filename:
+        type: string
+      path:
+        type: string
+      size_bytes:
+        type: integer
     type: object
   handlers.JournalDTO:
     properties:
@@ -625,6 +651,34 @@ paths:
       summary: Update artist
       tags:
       - artists
+  /calendar:
+    get:
+      parameters:
+      - description: Year
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: Month (1-12)
+        in: query
+        name: month
+        required: true
+        type: integer
+      - description: Day (1-31)
+        in: query
+        name: day
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DayViewDTO'
+      summary: Get calendar day view
+      tags:
+      - calendar
   /folders:
     get:
       description: List all non-deleted folders
@@ -846,6 +900,45 @@ paths:
           schema:
             $ref: '#/definitions/handlers.JournalDayDTO'
       summary: Get journal entry for a day
+      tags:
+      - journals
+  /journals/assets:
+    get:
+      parameters:
+      - description: Asset path or filename
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+      summary: Get journal asset
+      tags:
+      - journals
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Asset file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Override filename
+        in: query
+        name: filename
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.JournalAssetDTO'
+      summary: Upload journal asset
       tags:
       - journals
   /journals/tags:

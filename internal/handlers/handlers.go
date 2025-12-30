@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	"bottomley.ian/musicserver/internal/app"
@@ -10,8 +11,9 @@ import (
 )
 
 type Handlers struct {
-	App     *app.App
-	Scanner *scanner.Scanner
+	App           *app.App
+	Scanner       *scanner.Scanner
+	journalSyncMu sync.Mutex
 }
 
 func New(a *app.App, s *scanner.Scanner) *Handlers {

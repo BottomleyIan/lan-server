@@ -128,6 +128,20 @@ type NoteDTO struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type DayViewDTO struct {
+	Year  int64     `json:"year"`
+	Month int64     `json:"month"`
+	Day   int64     `json:"day"`
+	Tasks []TaskDTO `json:"tasks"`
+	Notes []NoteDTO `json:"notes"`
+}
+
+type JournalAssetDTO struct {
+	Path     string `json:"path"`
+	Filename string `json:"filename"`
+	Size     int64  `json:"size_bytes"`
+}
+
 type SettingDTO struct {
 	Key       string    `json:"key"`
 	Value     string    `json:"value"`

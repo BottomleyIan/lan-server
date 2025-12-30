@@ -336,6 +336,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/calendar": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Get calendar day view",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month (1-12)",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day (1-31)",
+                        "name": "day",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DayViewDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/folders": {
             "get": {
                 "description": "List all non-deleted folders",
@@ -583,6 +625,66 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/journals/assets": {
+            "get": {
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Get journal asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset path or filename",
+                        "name": "path",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Upload journal asset",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Asset file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Override filename",
+                        "name": "filename",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JournalAssetDTO"
+                        }
                     }
                 }
             }
@@ -1745,6 +1847,32 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.DayViewDTO": {
+            "type": "object",
+            "properties": {
+                "day": {
+                    "type": "integer"
+                },
+                "month": {
+                    "type": "integer"
+                },
+                "notes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.NoteDTO"
+                    }
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.TaskDTO"
+                    }
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.FolderDTO": {
             "type": "object",
             "properties": {
@@ -1788,6 +1916,20 @@ const docTemplate = `{
                 },
                 "time": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.JournalAssetDTO": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "size_bytes": {
+                    "type": "integer"
                 }
             }
         },

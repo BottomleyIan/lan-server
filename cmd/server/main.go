@@ -117,8 +117,13 @@ func main() {
 		r.Route("/notes", func(r chi.Router) {
 			r.Get("/", h.ListNotes)
 		})
+		r.Route("/calendar", func(r chi.Router) {
+			r.Get("/", h.GetCalendarDay)
+		})
 		r.Route("/journals", func(r chi.Router) {
 			r.Get("/", h.ListJournals)
+			r.Get("/assets", h.GetJournalAsset)
+			r.Post("/assets", h.UploadJournalAsset)
 			r.Get("/tags", h.ListJournalTags)
 			r.Get("/{year}/{month}", h.ListJournalsByMonth)
 			r.Get("/{year}/{month}/{day}", h.GetJournalDay)

@@ -352,6 +352,9 @@ func (h *Handlers) ListJournalTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) syncJournalsFromDisk(ctx context.Context) error {
+	h.journalSyncMu.Lock()
+	defer h.journalSyncMu.Unlock()
+
 	folder, ok, err := h.journalsFolder(ctx)
 	if err != nil {
 		return err
@@ -890,6 +893,18 @@ func parseOptionalIntQueryParam(w http.ResponseWriter, r *http.Request, key stri
 	}
 	out := int64(value)
 	return &out, true
+}
+
+func parseRequiredIntQueryParam(w http.ResponseWriter, r *http.Request, key string, min, max int) (int64, bool) {
+	value, ok := parseOptionalIntQueryParam(w, r, key, min, max)
+	if !ok {
+		return 0, false
+	}
+	if value == nil {
+		http.Error(w, key+" required", http.StatusBadRequest)
+		return 0, false
+	}
+	return *value, true
 }
 
 func parseISODateTime(value string) (time.Time, bool) {
