@@ -253,7 +253,7 @@ func playlistTrackDTOFromPT(pt db.PlaylistTrack, track *TrackDTO) PlaylistTrackD
 	}
 }
 
-func taskDTOFromDB(t db.Task) TaskDTO {
+func taskDTOFromDB(t db.JournalEntry) TaskDTO {
 	status := ""
 	if t.Status.Valid {
 		status = mapTaskStatus(t.Status.String)
@@ -275,7 +275,7 @@ func taskDTOFromDB(t db.Task) TaskDTO {
 	}
 }
 
-func tasksDTOFromDB(rows []db.Task) []TaskDTO {
+func tasksDTOFromDB(rows []db.JournalEntry) []TaskDTO {
 	out := make([]TaskDTO, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, taskDTOFromDB(row))
@@ -283,7 +283,7 @@ func tasksDTOFromDB(rows []db.Task) []TaskDTO {
 	return out
 }
 
-func noteDTOFromDB(t db.Task) NoteDTO {
+func noteDTOFromDB(t db.JournalEntry) NoteDTO {
 	return NoteDTO{
 		ID:        t.ID,
 		Year:      t.Year,
@@ -300,7 +300,7 @@ func noteDTOFromDB(t db.Task) NoteDTO {
 	}
 }
 
-func notesDTOFromDB(rows []db.Task) []NoteDTO {
+func notesDTOFromDB(rows []db.JournalEntry) []NoteDTO {
 	out := make([]NoteDTO, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, noteDTOFromDB(row))

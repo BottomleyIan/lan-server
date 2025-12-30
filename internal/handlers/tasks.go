@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -22,6 +19,7 @@ import (
 // @Param tags query []string false "Tags filter (comma-separated or repeated)"
 // @Param year query int false "Filter by year"
 // @Param month query int false "Filter by month (1-12)"
+// @Param day query int false "Filter by day (1-31)"
 // @Success 200 {array} TaskDTO
 // @Router /tasks [get]
 func (h *Handlers) ListTasks(w http.ResponseWriter, r *http.Request) {
@@ -30,64 +28,11 @@ func (h *Handlers) ListTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	folder, ok, err := h.journalsFolder(r.Context())
-	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	if !ok {
-		http.Error(w, "journals folder not found", http.StatusNotFound)
-		return
-	}
-
-	entries, err := os.ReadDir(folder)
-	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	tx, err := h.App.DB.BeginTx(r.Context(), nil)
-	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	queries := h.App.Queries.WithTx(tx)
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		fileYear, fileMonth, fileDay, ok := parseJournalFilename(name)
-		if !ok {
-			continue
-		}
-
-		info, err := entry.Info()
-		if err != nil {
-			_ = tx.Rollback()
-			http.Error(w, "internal error", http.StatusInternalServerError)
+	if err := h.syncJournalsFromDisk(r.Context()); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
 			return
 		}
-
-		fullPath := filepath.Join(folder, name)
-		data, err := os.ReadFile(fullPath)
-		if err != nil {
-			_ = tx.Rollback()
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		hash := sha256.Sum256(data)
-		hashHex := hex.EncodeToString(hash[:])
-		if err := syncJournalFromFile(r.Context(), queries, fileYear, fileMonth, fileDay, info.Size(), hashHex, data); err != nil {
-			_ = tx.Rollback()
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -104,6 +49,10 @@ func (h *Handlers) ListTasks(w http.ResponseWriter, r *http.Request) {
 	var monthParam interface{}
 	if filters.Month != nil {
 		monthParam = *filters.Month
+	}
+	var dayParam interface{}
+	if filters.Day != nil {
+		dayParam = *filters.Day
 	}
 	var statusesParam interface{}
 	if len(filters.Statuses) > 0 {
@@ -129,6 +78,7 @@ func (h *Handlers) ListTasks(w http.ResponseWriter, r *http.Request) {
 		Column2: monthParam,
 		Column3: statusesParam,
 		Column4: tagsParam,
+		Column5: dayParam,
 	})
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -141,6 +91,7 @@ func (h *Handlers) ListTasks(w http.ResponseWriter, r *http.Request) {
 type taskListFilters struct {
 	Year     *int64
 	Month    *int64
+	Day      *int64
 	Statuses []string
 	Tags     []string
 }
@@ -156,8 +107,13 @@ func parseTasksFilters(w http.ResponseWriter, r *http.Request) (taskListFilters,
 	if !ok {
 		return filters, false
 	}
+	day, ok := parseOptionalIntParam(w, r, "day", 1, 31)
+	if !ok {
+		return filters, false
+	}
 	filters.Year = year
 	filters.Month = month
+	filters.Day = day
 
 	statuses := append(parseQueryList(r, "statuses"), parseQueryList(r, "status")...)
 	filters.Statuses = normalizeStatuses(statuses)

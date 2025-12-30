@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -20,6 +21,15 @@ import (
 func (h *Handlers) ListNotes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := h.syncJournalsFromDisk(r.Context()); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 

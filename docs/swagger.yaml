@@ -1270,6 +1270,10 @@ paths:
         in: query
         name: month
         type: integer
+      - description: Filter by day (1-31)
+        in: query
+        name: day
+        type: integer
       produces:
       - application/json
       responses:

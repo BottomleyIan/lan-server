@@ -351,6 +351,64 @@ func (h *Handlers) ListJournalTags(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
+func (h *Handlers) syncJournalsFromDisk(ctx context.Context) error {
+	folder, ok, err := h.journalsFolder(ctx)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errJournalsFolderNotFound
+	}
+
+	entries, err := os.ReadDir(folder)
+	if err != nil {
+		return err
+	}
+
+	tx, err := h.App.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	queries := h.App.Queries.WithTx(tx)
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		fileYear, fileMonth, fileDay, ok := parseJournalFilename(name)
+		if !ok {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+
+		fullPath := filepath.Join(folder, name)
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+
+		hash := sha256.Sum256(data)
+		hashHex := hex.EncodeToString(hash[:])
+		if err := syncJournalFromFile(ctx, queries, fileYear, fileMonth, fileDay, info.Size(), hashHex, data); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (h *Handlers) journalsFolder(ctx context.Context) (string, bool, error) {
 	setting, err := h.App.Queries.GetSetting(ctx, settingKeyJournalsFolder)
 	if err != nil {

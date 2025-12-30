@@ -12,7 +12,7 @@ import (
 )
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (
+INSERT INTO journal_entries (
   year,
   month,
   day,
@@ -45,8 +45,8 @@ type CreateTaskParams struct {
 	DeadlineAt  dbtypes.NullString
 }
 
-// ---------- tasks ----------
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
+// ---------- journal_entries ----------
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (JournalEntry, error) {
 	row := q.db.QueryRowContext(ctx, createTask,
 		arg.Year,
 		arg.Month,
@@ -61,7 +61,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.ScheduledAt,
 		arg.DeadlineAt,
 	)
-	var i Task
+	var i JournalEntry
 	err := row.Scan(
 		&i.ID,
 		&i.Year,
@@ -83,7 +83,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 }
 
 const deleteTasksByDate = `-- name: DeleteTasksByDate :exec
-DELETE FROM tasks
+DELETE FROM journal_entries
 WHERE year = ?
   AND month = ?
   AND day = ?
@@ -101,7 +101,7 @@ func (q *Queries) DeleteTasksByDate(ctx context.Context, arg DeleteTasksByDatePa
 }
 
 const deleteTasksByMonth = `-- name: DeleteTasksByMonth :exec
-DELETE FROM tasks
+DELETE FROM journal_entries
 WHERE year = ?
   AND month = ?
 `
@@ -118,7 +118,7 @@ func (q *Queries) DeleteTasksByMonth(ctx context.Context, arg DeleteTasksByMonth
 
 const listNotes = `-- name: ListNotes :many
 SELECT id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
-FROM tasks
+FROM journal_entries
 WHERE status IS NULL
   AND (?1 IS NULL OR year = ?1)
   AND (?2 IS NULL OR month = ?2)
@@ -127,7 +127,7 @@ WHERE status IS NULL
     ?4 IS NULL
     OR EXISTS (
       SELECT 1
-      FROM json_each(tasks.tags)
+      FROM json_each(journal_entries.tags)
       WHERE value = ?4
     )
   )
@@ -141,7 +141,7 @@ type ListNotesParams struct {
 	Column4 interface{}
 }
 
-func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]Task, error) {
+func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]JournalEntry, error) {
 	rows, err := q.db.QueryContext(ctx, listNotes,
 		arg.Column1,
 		arg.Column2,
@@ -152,9 +152,9 @@ func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]Task, e
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []JournalEntry
 	for rows.Next() {
-		var i Task
+		var i JournalEntry
 		if err := rows.Scan(
 			&i.ID,
 			&i.Year,
@@ -187,10 +187,11 @@ func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]Task, e
 
 const listTasks = `-- name: ListTasks :many
 SELECT id, year, month, day, position, title, raw_line, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
-FROM tasks
+FROM journal_entries
 WHERE status IS NOT NULL
   AND (?1 IS NULL OR year = ?1)
   AND (?2 IS NULL OR month = ?2)
+  AND (?5 IS NULL OR day = ?5)
   AND (
     ?3 IS NULL
     OR status IN (SELECT value FROM json_each(?3))
@@ -199,7 +200,7 @@ WHERE status IS NOT NULL
     ?4 IS NULL
     OR EXISTS (
       SELECT 1
-      FROM json_each(tasks.tags)
+      FROM json_each(journal_entries.tags)
       WHERE value IN (SELECT value FROM json_each(?4))
     )
   )
@@ -211,22 +212,24 @@ type ListTasksParams struct {
 	Column2 interface{}
 	Column3 interface{}
 	Column4 interface{}
+	Column5 interface{}
 }
 
-func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]Task, error) {
+func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]JournalEntry, error) {
 	rows, err := q.db.QueryContext(ctx, listTasks,
 		arg.Column1,
 		arg.Column2,
 		arg.Column3,
 		arg.Column4,
+		arg.Column5,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []JournalEntry
 	for rows.Next() {
-		var i Task
+		var i JournalEntry
 		if err := rows.Scan(
 			&i.ID,
 			&i.Year,

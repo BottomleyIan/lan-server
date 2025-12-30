@@ -130,29 +130,29 @@ sql:
           - column: "playlist_tracks.updated_at"
             go_type: "time.Time"
 
-          - column: "tasks.body"
+          - column: "journal_entries.body"
             go_type:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullString"
-          - column: "tasks.status"
+          - column: "journal_entries.status"
             go_type:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullString"
-          - column: "tasks.scheduled_at"
+          - column: "journal_entries.scheduled_at"
             go_type:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullString"
-          - column: "tasks.deadline_at"
+          - column: "journal_entries.deadline_at"
             go_type:
               import: "bottomley.ian/musicserver/internal/dbtypes"
               package: "dbtypes"
               type: "NullString"
-          - column: "tasks.created_at"
+          - column: "journal_entries.created_at"
             go_type: "time.Time"
-          - column: "tasks.updated_at"
+          - column: "journal_entries.updated_at"
             go_type: "time.Time"
 
           - column: "task_transitions.reason"

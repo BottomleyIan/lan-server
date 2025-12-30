@@ -53,6 +53,24 @@ type Journal struct {
 	UpdatedAt     time.Time
 }
 
+type JournalEntry struct {
+	ID          int64
+	Year        int64
+	Month       int64
+	Day         int64
+	Position    int64
+	Title       string
+	RawLine     string
+	Body        dbtypes.NullString
+	Status      dbtypes.NullString
+	Tags        string
+	Type        string
+	ScheduledAt dbtypes.NullString
+	DeadlineAt  dbtypes.NullString
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type Playlist struct {
 	ID        int64
 	Name      string
@@ -76,24 +94,6 @@ type Setting struct {
 	Value     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
-}
-
-type Task struct {
-	ID          int64
-	Year        int64
-	Month       int64
-	Day         int64
-	Position    int64
-	Title       string
-	RawLine     string
-	Body        dbtypes.NullString
-	Status      dbtypes.NullString
-	Tags        string
-	Type        string
-	ScheduledAt dbtypes.NullString
-	DeadlineAt  dbtypes.NullString
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
 }
 
 type Track struct {

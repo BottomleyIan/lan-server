@@ -1,9 +1,9 @@
 DROP TABLE IF EXISTS task_transitions;
 DROP TABLE IF EXISTS task_statuses;
-DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS journal_entries;
 
--- ---------- tasks ----------
-CREATE TABLE IF NOT EXISTS tasks (
+-- ---------- journal_entries ----------
+CREATE TABLE IF NOT EXISTS journal_entries (
   id INTEGER PRIMARY KEY,
   year INTEGER NOT NULL,
   month INTEGER NOT NULL,
@@ -22,14 +22,14 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(year, month, day);
-CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_date ON journal_entries(year, month, day);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_status ON journal_entries(status);
 
-CREATE TRIGGER IF NOT EXISTS tasks_set_updated_at
-AFTER UPDATE ON tasks
+CREATE TRIGGER IF NOT EXISTS journal_entries_set_updated_at
+AFTER UPDATE ON journal_entries
 FOR EACH ROW
 BEGIN
-  UPDATE tasks
+  UPDATE journal_entries
   SET updated_at = CURRENT_TIMESTAMP
   WHERE id = OLD.id;
 END;

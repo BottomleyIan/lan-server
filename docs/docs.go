@@ -1328,6 +1328,12 @@ const docTemplate = `{
                         "description": "Filter by month (1-12)",
                         "name": "month",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by day (1-31)",
+                        "name": "day",
+                        "in": "query"
                     }
                 ],
                 "responses": {
