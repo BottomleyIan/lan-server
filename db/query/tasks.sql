@@ -21,9 +21,24 @@ RETURNING *;
 SELECT *
 FROM journal_entries
 WHERE status IS NOT NULL
-  AND (?1 IS NULL OR year = ?1)
-  AND (?2 IS NULL OR month = ?2)
-  AND (?5 IS NULL OR day = ?5)
+  AND (
+    ?1 IS NULL
+    OR year = ?1
+    OR substr(scheduled_at, 1, 4) = printf('%04d', ?1)
+    OR substr(deadline_at, 1, 4) = printf('%04d', ?1)
+  )
+  AND (
+    ?2 IS NULL
+    OR month = ?2
+    OR substr(scheduled_at, 6, 2) = printf('%02d', ?2)
+    OR substr(deadline_at, 6, 2) = printf('%02d', ?2)
+  )
+  AND (
+    ?5 IS NULL
+    OR day = ?5
+    OR substr(scheduled_at, 9, 2) = printf('%02d', ?5)
+    OR substr(deadline_at, 9, 2) = printf('%02d', ?5)
+  )
   AND (
     ?3 IS NULL
     OR status IN (SELECT value FROM json_each(?3))
