@@ -147,7 +147,15 @@ func (h *Handlers) journalAssetsFolder(ctx context.Context) (string, error) {
 	if !ok {
 		return "", errJournalsFolderNotFound
 	}
-	return filepath.Join(folder, "assets"), nil
+	sibling := filepath.Join(filepath.Dir(folder), "assets")
+	if info, err := h.App.FS.Stat(sibling); err == nil && info.IsDir() {
+		return sibling, nil
+	}
+	nested := filepath.Join(folder, "assets")
+	if info, err := h.App.FS.Stat(nested); err == nil && info.IsDir() {
+		return nested, nil
+	}
+	return sibling, nil
 }
 
 func normalizeJournalAssetPath(raw string) (string, bool) {
