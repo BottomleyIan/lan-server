@@ -153,8 +153,9 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
-	entries := parseLogseqEntries(strings.Join(lines, "\n"))
+	content := string(data)
+	lines := strings.Split(content, "\n")
+	entries := parseLogseqEntries(content)
 	start, end, ok := findEntryRange(entries, hash, entryType)
 	if !ok {
 		http.Error(w, "entry not found", http.StatusNotFound)
@@ -232,8 +233,9 @@ func (h *Handlers) deleteJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
-	entries := parseLogseqEntries(strings.Join(lines, "\n"))
+	content := string(data)
+	lines := strings.Split(content, "\n")
+	entries := parseLogseqEntries(content)
 	start, end, ok := findEntryRange(entries, hash, entryType)
 	if !ok {
 		http.Error(w, "entry not found", http.StatusNotFound)
