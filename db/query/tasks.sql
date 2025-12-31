@@ -1,5 +1,5 @@
 -- ---------- journal_entries ----------
--- name: CreateTask :one
+-- name: CreateJournalEntry :one
 INSERT INTO journal_entries (
   year,
   month,
@@ -18,11 +18,10 @@ INSERT INTO journal_entries (
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: ListTasks :many
+-- name: ListJournalEntries :many
 SELECT *
 FROM journal_entries
-WHERE status IS NOT NULL
-  AND (
+WHERE (
     ?1 IS NULL
     OR year = ?1
     OR substr(scheduled_at, 1, 4) = printf('%04d', ?1)
@@ -35,21 +34,25 @@ WHERE status IS NOT NULL
     OR substr(deadline_at, 6, 2) = printf('%02d', ?2)
   )
   AND (
-    ?5 IS NULL
-    OR day = ?5
-    OR substr(scheduled_at, 9, 2) = printf('%02d', ?5)
-    OR substr(deadline_at, 9, 2) = printf('%02d', ?5)
-  )
-  AND (
     ?3 IS NULL
-    OR status IN (SELECT value FROM json_each(?3))
+    OR day = ?3
+    OR substr(scheduled_at, 9, 2) = printf('%02d', ?3)
+    OR substr(deadline_at, 9, 2) = printf('%02d', ?3)
   )
   AND (
     ?4 IS NULL
+    OR type = ?4
+  )
+  AND (
+    ?5 IS NULL
+    OR status IN (SELECT value FROM json_each(?5))
+  )
+  AND (
+    ?6 IS NULL
     OR EXISTS (
       SELECT 1
       FROM json_each(journal_entries.tags)
-      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?4))
+      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?6))
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC;
@@ -67,30 +70,13 @@ WHERE year = ?
   AND hash = ?
 LIMIT 1;
 
--- name: ListNotes :many
-SELECT *
-FROM journal_entries
-WHERE status IS NULL
-  AND (?1 IS NULL OR year = ?1)
-  AND (?2 IS NULL OR month = ?2)
-  AND (?3 IS NULL OR day = ?3)
-  AND (
-    ?4 IS NULL
-    OR EXISTS (
-      SELECT 1
-      FROM json_each(journal_entries.tags)
-      WHERE LOWER(value) = LOWER(?4)
-    )
-  )
-ORDER BY year DESC, month DESC, day DESC, position ASC;
-
--- name: DeleteTasksByDate :exec
+-- name: DeleteJournalEntriesByDate :exec
 DELETE FROM journal_entries
 WHERE year = ?
   AND month = ?
   AND day = ?;
 
--- name: DeleteTasksByMonth :exec
+-- name: DeleteJournalEntriesByMonth :exec
 DELETE FROM journal_entries
 WHERE year = ?
   AND month = ?;

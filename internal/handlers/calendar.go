@@ -44,23 +44,13 @@ func (h *Handlers) GetCalendarDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := h.App.Queries.ListTasks(r.Context(), db.ListTasksParams{
-		Column1: year,
-		Column2: month,
-		Column3: nil,
-		Column4: nil,
-		Column5: day,
-	})
-	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	notes, err := h.App.Queries.ListNotes(r.Context(), db.ListNotesParams{
+	rows, err := h.App.Queries.ListJournalEntries(r.Context(), db.ListJournalEntriesParams{
 		Column1: year,
 		Column2: month,
 		Column3: day,
 		Column4: nil,
+		Column5: nil,
+		Column6: nil,
 	})
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -68,10 +58,9 @@ func (h *Handlers) GetCalendarDay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, DayViewDTO{
-		Year:  year,
-		Month: month,
-		Day:   day,
-		Tasks: tasksDTOFromDB(tasks),
-		Notes: notesDTOFromDB(notes),
+		Year:    year,
+		Month:   month,
+		Day:     day,
+		Entries: journalEntriesDTOFromDB(rows),
 	})
 }

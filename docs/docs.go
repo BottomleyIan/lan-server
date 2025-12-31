@@ -598,35 +598,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "journals"
-                ],
-                "summary": "Append a journal entry for today",
-                "operationId": "createJournalEntry",
-                "parameters": [
-                    {
-                        "description": "Journal entry payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.createJournalEntryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
             }
         },
         "/journals/assets": {
@@ -685,6 +656,232 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/handlers.JournalAssetDTO"
                         }
+                    }
+                }
+            }
+        },
+        "/journals/entries": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "List journal entries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter by year",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by month (1-12)",
+                        "name": "month",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by day (1-31)",
+                        "name": "day",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry type (task|misc|note)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Statuses filter (comma-separated or repeated)",
+                        "name": "statuses",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Status filter (comma-separated or repeated)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Tags filter (comma-separated or repeated)",
+                        "name": "tags",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Tags filter (comma-separated or repeated)",
+                        "name": "tag",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.JournalEntryDTO"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Append a journal entry for today",
+                "operationId": "createJournalEntry",
+                "parameters": [
+                    {
+                        "description": "Journal entry payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.createJournalEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/journals/entries/{year}/{month}/{day}/{hash}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Update journal entry by hash",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash for concurrency",
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated entry payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateJournalEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JournalEntryDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Delete journal entry by hash",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Entry hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
@@ -853,191 +1050,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/handlers.JournalDayDTO"
                         }
-                    }
-                }
-            }
-        },
-        "/notes": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "notes"
-                ],
-                "summary": "List notes",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by year",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by month (1-12)",
-                        "name": "month",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by day (1-31)",
-                        "name": "day",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by tag",
-                        "name": "tag",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.NoteDTO"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "notes"
-                ],
-                "summary": "Append a note entry for today",
-                "parameters": [
-                    {
-                        "description": "Note payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.createNoteRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/notes/{year}/{month}/{day}/{hash}": {
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "notes"
-                ],
-                "summary": "Update note by hash",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Year",
-                        "name": "year",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Month",
-                        "name": "month",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Day",
-                        "name": "day",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Entry hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Entry hash for concurrency",
-                        "name": "If-Match",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated entry payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.updateJournalEntryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.NoteDTO"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "notes"
-                ],
-                "summary": "Delete note by hash",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Year",
-                        "name": "year",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Month",
-                        "name": "month",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Day",
-                        "name": "day",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Entry hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
                     }
                 }
             }
@@ -1566,215 +1578,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/tasks": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "List tasks",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Statuses filter (comma-separated or repeated)",
-                        "name": "statuses",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Status filter (comma-separated or repeated)",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Tags filter (comma-separated or repeated)",
-                        "name": "tags",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by year",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by month (1-12)",
-                        "name": "month",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by day (1-31)",
-                        "name": "day",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.TaskDTO"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Append a task entry for today",
-                "parameters": [
-                    {
-                        "description": "Task payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.createLogseqTaskRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/tasks/{year}/{month}/{day}/{hash}": {
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Update task by hash",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Year",
-                        "name": "year",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Month",
-                        "name": "month",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Day",
-                        "name": "day",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Entry hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Entry hash for concurrency",
-                        "name": "If-Match",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated entry payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.updateJournalEntryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.TaskDTO"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Delete task by hash",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Year",
-                        "name": "year",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Month",
-                        "name": "month",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Day",
-                        "name": "day",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Entry hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
         "/tracks": {
             "get": {
                 "description": "List all non-deleted tracks",
@@ -2149,20 +1952,14 @@ const docTemplate = `{
                 "day": {
                     "type": "integer"
                 },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.JournalEntryDTO"
+                    }
+                },
                 "month": {
                     "type": "integer"
-                },
-                "notes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/handlers.NoteDTO"
-                    }
-                },
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/handlers.TaskDTO"
-                    }
                 },
                 "year": {
                     "type": "integer"
@@ -2281,6 +2078,62 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.JournalEntryDTO": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "day": {
+                    "type": "integer"
+                },
+                "deadline_at": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "month": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "raw_line": {
+                    "type": "string"
+                },
+                "scheduled_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.MetalPriceDTO": {
             "type": "object",
             "properties": {
@@ -2312,53 +2165,6 @@ const docTemplate = `{
                 },
                 "silver": {
                     "$ref": "#/definitions/handlers.MetalPriceDTO"
-                }
-            }
-        },
-        "handlers.NoteDTO": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "day": {
-                    "type": "integer"
-                },
-                "hash": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "month": {
-                    "type": "integer"
-                },
-                "position": {
-                    "type": "integer"
-                },
-                "raw_line": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "year": {
-                    "type": "integer"
                 }
             }
         },
@@ -2485,56 +2291,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.TaskDTO": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "day": {
-                    "type": "integer"
-                },
-                "deadline_at": {
-                    "type": "string"
-                },
-                "hash": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "month": {
-                    "type": "integer"
-                },
-                "position": {
-                    "type": "integer"
-                },
-                "scheduled_at": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "year": {
-                    "type": "integer"
-                }
-            }
-        },
         "handlers.TrackDTO": {
             "type": "object",
             "properties": {
@@ -2628,59 +2384,16 @@ const docTemplate = `{
                 "body": {
                     "type": "string"
                 },
-                "description": {
+                "deadline": {
                     "type": "string"
                 },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "handlers.createLogseqTaskRequest": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string",
-                    "example": "Include the new journals endpoints."
-                },
-                "deadline": {
-                    "type": "string",
-                    "example": "2025-12-23"
-                },
                 "description": {
-                    "type": "string",
-                    "example": "Write release notes"
+                    "type": "string"
                 },
                 "scheduled": {
-                    "type": "string",
-                    "example": "2025-12-23T11:00:00Z"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "TODO"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "tag1",
-                        "tag2"
-                    ]
-                }
-            }
-        },
-        "handlers.createNoteRequest": {
-            "type": "object",
-            "properties": {
-                "body": {
                     "type": "string"
                 },
-                "description": {
+                "status": {
                     "type": "string"
                 },
                 "tags": {

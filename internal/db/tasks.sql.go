@@ -11,7 +11,7 @@ import (
 	dbtypes "bottomley.ian/musicserver/internal/dbtypes"
 )
 
-const createTask = `-- name: CreateTask :one
+const createJournalEntry = `-- name: CreateJournalEntry :one
 INSERT INTO journal_entries (
   year,
   month,
@@ -31,7 +31,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
 `
 
-type CreateTaskParams struct {
+type CreateJournalEntryParams struct {
 	Year        int64
 	Month       int64
 	Day         int64
@@ -48,8 +48,8 @@ type CreateTaskParams struct {
 }
 
 // ---------- journal_entries ----------
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (JournalEntry, error) {
-	row := q.db.QueryRowContext(ctx, createTask,
+func (q *Queries) CreateJournalEntry(ctx context.Context, arg CreateJournalEntryParams) (JournalEntry, error) {
+	row := q.db.QueryRowContext(ctx, createJournalEntry,
 		arg.Year,
 		arg.Month,
 		arg.Day,
@@ -86,37 +86,37 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Journal
 	return i, err
 }
 
-const deleteTasksByDate = `-- name: DeleteTasksByDate :exec
+const deleteJournalEntriesByDate = `-- name: DeleteJournalEntriesByDate :exec
 DELETE FROM journal_entries
 WHERE year = ?
   AND month = ?
   AND day = ?
 `
 
-type DeleteTasksByDateParams struct {
+type DeleteJournalEntriesByDateParams struct {
 	Year  int64
 	Month int64
 	Day   int64
 }
 
-func (q *Queries) DeleteTasksByDate(ctx context.Context, arg DeleteTasksByDateParams) error {
-	_, err := q.db.ExecContext(ctx, deleteTasksByDate, arg.Year, arg.Month, arg.Day)
+func (q *Queries) DeleteJournalEntriesByDate(ctx context.Context, arg DeleteJournalEntriesByDateParams) error {
+	_, err := q.db.ExecContext(ctx, deleteJournalEntriesByDate, arg.Year, arg.Month, arg.Day)
 	return err
 }
 
-const deleteTasksByMonth = `-- name: DeleteTasksByMonth :exec
+const deleteJournalEntriesByMonth = `-- name: DeleteJournalEntriesByMonth :exec
 DELETE FROM journal_entries
 WHERE year = ?
   AND month = ?
 `
 
-type DeleteTasksByMonthParams struct {
+type DeleteJournalEntriesByMonthParams struct {
 	Year  int64
 	Month int64
 }
 
-func (q *Queries) DeleteTasksByMonth(ctx context.Context, arg DeleteTasksByMonthParams) error {
-	_, err := q.db.ExecContext(ctx, deleteTasksByMonth, arg.Year, arg.Month)
+func (q *Queries) DeleteJournalEntriesByMonth(ctx context.Context, arg DeleteJournalEntriesByMonthParams) error {
+	_, err := q.db.ExecContext(ctx, deleteJournalEntriesByMonth, arg.Year, arg.Month)
 	return err
 }
 
@@ -166,6 +166,102 @@ func (q *Queries) GetJournalEntryByDateHash(ctx context.Context, arg GetJournalE
 	return i, err
 }
 
+const listJournalEntries = `-- name: ListJournalEntries :many
+SELECT id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+FROM journal_entries
+WHERE (
+    ?1 IS NULL
+    OR year = ?1
+    OR substr(scheduled_at, 1, 4) = printf('%04d', ?1)
+    OR substr(deadline_at, 1, 4) = printf('%04d', ?1)
+  )
+  AND (
+    ?2 IS NULL
+    OR month = ?2
+    OR substr(scheduled_at, 6, 2) = printf('%02d', ?2)
+    OR substr(deadline_at, 6, 2) = printf('%02d', ?2)
+  )
+  AND (
+    ?3 IS NULL
+    OR day = ?3
+    OR substr(scheduled_at, 9, 2) = printf('%02d', ?3)
+    OR substr(deadline_at, 9, 2) = printf('%02d', ?3)
+  )
+  AND (
+    ?4 IS NULL
+    OR type = ?4
+  )
+  AND (
+    ?5 IS NULL
+    OR status IN (SELECT value FROM json_each(?5))
+  )
+  AND (
+    ?6 IS NULL
+    OR EXISTS (
+      SELECT 1
+      FROM json_each(journal_entries.tags)
+      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?6))
+    )
+  )
+ORDER BY year DESC, month DESC, day DESC, position ASC
+`
+
+type ListJournalEntriesParams struct {
+	Column1 interface{}
+	Column2 interface{}
+	Column3 interface{}
+	Column4 interface{}
+	Column5 interface{}
+	Column6 interface{}
+}
+
+func (q *Queries) ListJournalEntries(ctx context.Context, arg ListJournalEntriesParams) ([]JournalEntry, error) {
+	rows, err := q.db.QueryContext(ctx, listJournalEntries,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+		arg.Column5,
+		arg.Column6,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []JournalEntry
+	for rows.Next() {
+		var i JournalEntry
+		if err := rows.Scan(
+			&i.ID,
+			&i.Year,
+			&i.Month,
+			&i.Day,
+			&i.Position,
+			&i.Title,
+			&i.RawLine,
+			&i.Hash,
+			&i.Body,
+			&i.Status,
+			&i.Tags,
+			&i.Type,
+			&i.ScheduledAt,
+			&i.DeadlineAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listJournalEntryTags = `-- name: ListJournalEntryTags :many
 SELECT tags
 FROM journal_entries
@@ -184,167 +280,6 @@ func (q *Queries) ListJournalEntryTags(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 		items = append(items, tags)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listNotes = `-- name: ListNotes :many
-SELECT id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
-FROM journal_entries
-WHERE status IS NULL
-  AND (?1 IS NULL OR year = ?1)
-  AND (?2 IS NULL OR month = ?2)
-  AND (?3 IS NULL OR day = ?3)
-  AND (
-    ?4 IS NULL
-    OR EXISTS (
-      SELECT 1
-      FROM json_each(journal_entries.tags)
-      WHERE LOWER(value) = LOWER(?4)
-    )
-  )
-ORDER BY year DESC, month DESC, day DESC, position ASC
-`
-
-type ListNotesParams struct {
-	Column1 interface{}
-	Column2 interface{}
-	Column3 interface{}
-	Column4 interface{}
-}
-
-func (q *Queries) ListNotes(ctx context.Context, arg ListNotesParams) ([]JournalEntry, error) {
-	rows, err := q.db.QueryContext(ctx, listNotes,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []JournalEntry
-	for rows.Next() {
-		var i JournalEntry
-		if err := rows.Scan(
-			&i.ID,
-			&i.Year,
-			&i.Month,
-			&i.Day,
-			&i.Position,
-			&i.Title,
-			&i.RawLine,
-			&i.Hash,
-			&i.Body,
-			&i.Status,
-			&i.Tags,
-			&i.Type,
-			&i.ScheduledAt,
-			&i.DeadlineAt,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listTasks = `-- name: ListTasks :many
-SELECT id, year, month, day, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
-FROM journal_entries
-WHERE status IS NOT NULL
-  AND (
-    ?1 IS NULL
-    OR year = ?1
-    OR substr(scheduled_at, 1, 4) = printf('%04d', ?1)
-    OR substr(deadline_at, 1, 4) = printf('%04d', ?1)
-  )
-  AND (
-    ?2 IS NULL
-    OR month = ?2
-    OR substr(scheduled_at, 6, 2) = printf('%02d', ?2)
-    OR substr(deadline_at, 6, 2) = printf('%02d', ?2)
-  )
-  AND (
-    ?5 IS NULL
-    OR day = ?5
-    OR substr(scheduled_at, 9, 2) = printf('%02d', ?5)
-    OR substr(deadline_at, 9, 2) = printf('%02d', ?5)
-  )
-  AND (
-    ?3 IS NULL
-    OR status IN (SELECT value FROM json_each(?3))
-  )
-  AND (
-    ?4 IS NULL
-    OR EXISTS (
-      SELECT 1
-      FROM json_each(journal_entries.tags)
-      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?4))
-    )
-  )
-ORDER BY year DESC, month DESC, day DESC, position ASC
-`
-
-type ListTasksParams struct {
-	Column1 interface{}
-	Column2 interface{}
-	Column3 interface{}
-	Column4 interface{}
-	Column5 interface{}
-}
-
-func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]JournalEntry, error) {
-	rows, err := q.db.QueryContext(ctx, listTasks,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []JournalEntry
-	for rows.Next() {
-		var i JournalEntry
-		if err := rows.Scan(
-			&i.ID,
-			&i.Year,
-			&i.Month,
-			&i.Day,
-			&i.Position,
-			&i.Title,
-			&i.RawLine,
-			&i.Hash,
-			&i.Body,
-			&i.Status,
-			&i.Tags,
-			&i.Type,
-			&i.ScheduledAt,
-			&i.DeadlineAt,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

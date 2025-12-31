@@ -97,45 +97,11 @@ type PlaylistTrackDTO struct {
 	Track      *TrackDTO  `json:"track,omitempty"`
 }
 
-type TaskDTO struct {
-	ID          int64     `json:"id"`
-	Year        int64     `json:"year"`
-	Month       int64     `json:"month"`
-	Day         int64     `json:"day"`
-	Position    int64     `json:"position"`
-	Title       string    `json:"title"`
-	Body        *string   `json:"body,omitempty"`
-	Status      string    `json:"status"`
-	Tags        []string  `json:"tags,omitempty"`
-	Hash        string    `json:"hash"`
-	ScheduledAt *string   `json:"scheduled_at,omitempty"`
-	DeadlineAt  *string   `json:"deadline_at,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-type NoteDTO struct {
-	ID        int64     `json:"id"`
-	Year      int64     `json:"year"`
-	Month     int64     `json:"month"`
-	Day       int64     `json:"day"`
-	Position  int64     `json:"position"`
-	Title     string    `json:"title"`
-	RawLine   string    `json:"raw_line"`
-	Hash      string    `json:"hash"`
-	Body      *string   `json:"body,omitempty"`
-	Tags      []string  `json:"tags,omitempty"`
-	Type      string    `json:"type"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 type DayViewDTO struct {
-	Year  int64     `json:"year"`
-	Month int64     `json:"month"`
-	Day   int64     `json:"day"`
-	Tasks []TaskDTO `json:"tasks"`
-	Notes []NoteDTO `json:"notes"`
+	Year    int64             `json:"year"`
+	Month   int64             `json:"month"`
+	Day     int64             `json:"day"`
+	Entries []JournalEntryDTO `json:"entries"`
 }
 
 type JournalAssetDTO struct {
@@ -191,4 +157,23 @@ type JournalDayDTO struct {
 	Month int64  `json:"month"`
 	Day   int64  `json:"day"`
 	Raw   string `json:"raw"`
+}
+
+type JournalEntryDTO struct {
+	ID          int64     `json:"id"`
+	Year        int64     `json:"year"`
+	Month       int64     `json:"month"`
+	Day         int64     `json:"day"`
+	Position    int64     `json:"position"`
+	Title       string    `json:"title"`
+	RawLine     string    `json:"raw_line"`
+	Hash        string    `json:"hash"`
+	Body        *string   `json:"body,omitempty"`
+	Status      *string   `json:"status"`
+	Tags        []string  `json:"tags,omitempty"`
+	Type        string    `json:"type"`
+	ScheduledAt *string   `json:"scheduled_at"`
+	DeadlineAt  *string   `json:"deadline_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

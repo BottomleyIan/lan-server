@@ -110,23 +110,17 @@ func main() {
 			r.Delete("/{id}", h.DeleteAlbum)
 			r.Get("/{id}/image", h.GetAlbumImage)
 		})
-		r.Route("/tasks", func(r chi.Router) {
-			r.Get("/", h.ListTasks)
-			r.Put("/{year}/{month}/{day}/{hash}", h.UpdateTaskByHash)
-			r.Delete("/{year}/{month}/{day}/{hash}", h.DeleteTaskByHash)
-			r.Post("/", h.CreateTask)
-		})
-		r.Route("/notes", func(r chi.Router) {
-			r.Get("/", h.ListNotes)
-			r.Post("/", h.CreateNote)
-			r.Put("/{year}/{month}/{day}/{hash}", h.UpdateNoteByHash)
-			r.Delete("/{year}/{month}/{day}/{hash}", h.DeleteNoteByHash)
-		})
 		r.Route("/calendar", func(r chi.Router) {
 			r.Get("/", h.GetCalendarDay)
 		})
 		r.Route("/journals", func(r chi.Router) {
 			r.Get("/", h.ListJournals)
+			r.Route("/entries", func(r chi.Router) {
+				r.Get("/", h.ListJournalEntries)
+				r.Post("/", h.CreateJournalEntry)
+				r.Put("/{year}/{month}/{day}/{hash}", h.UpdateJournalEntryByHash)
+				r.Delete("/{year}/{month}/{day}/{hash}", h.DeleteJournalEntryByHash)
+			})
 			r.Get("/assets", h.GetJournalAsset)
 			r.Post("/assets", h.UploadJournalAsset)
 			r.Get("/tags/graph", h.ListJournalTagGraph)
@@ -134,7 +128,6 @@ func main() {
 			r.Get("/tags", h.ListJournalTags)
 			r.Get("/{year}/{month}", h.ListJournalsByMonth)
 			r.Get("/{year}/{month}/{day}", h.GetJournalDay)
-			r.Post("/", h.CreateJournalEntry)
 		})
 		r.Route("/prices", func(r chi.Router) {
 			r.Get("/metals", h.GetMetalPrices)

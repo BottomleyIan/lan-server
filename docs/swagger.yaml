@@ -54,16 +54,12 @@ definitions:
     properties:
       day:
         type: integer
+      entries:
+        items:
+          $ref: '#/definitions/handlers.JournalEntryDTO'
+        type: array
       month:
         type: integer
-      notes:
-        items:
-          $ref: '#/definitions/handlers.NoteDTO'
-        type: array
-      tasks:
-        items:
-          $ref: '#/definitions/handlers.TaskDTO'
-        type: array
       year:
         type: integer
     type: object
@@ -140,6 +136,43 @@ definitions:
       year:
         type: integer
     type: object
+  handlers.JournalEntryDTO:
+    properties:
+      body:
+        type: string
+      created_at:
+        type: string
+      day:
+        type: integer
+      deadline_at:
+        type: string
+      hash:
+        type: string
+      id:
+        type: integer
+      month:
+        type: integer
+      position:
+        type: integer
+      raw_line:
+        type: string
+      scheduled_at:
+        type: string
+      status:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      year:
+        type: integer
+    type: object
   handlers.MetalPriceDTO:
     properties:
       gbp:
@@ -161,37 +194,6 @@ definitions:
         $ref: '#/definitions/handlers.MetalPriceDTO'
       silver:
         $ref: '#/definitions/handlers.MetalPriceDTO'
-    type: object
-  handlers.NoteDTO:
-    properties:
-      body:
-        type: string
-      created_at:
-        type: string
-      day:
-        type: integer
-      hash:
-        type: string
-      id:
-        type: integer
-      month:
-        type: integer
-      position:
-        type: integer
-      raw_line:
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
-        type: string
-      type:
-        type: string
-      updated_at:
-        type: string
-      year:
-        type: integer
     type: object
   handlers.PlaylistDTO:
     properties:
@@ -273,39 +275,6 @@ definitions:
       tag:
         type: string
     type: object
-  handlers.TaskDTO:
-    properties:
-      body:
-        type: string
-      created_at:
-        type: string
-      day:
-        type: integer
-      deadline_at:
-        type: string
-      hash:
-        type: string
-      id:
-        type: integer
-      month:
-        type: integer
-      position:
-        type: integer
-      scheduled_at:
-        type: string
-      status:
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
-        type: string
-      updated_at:
-        type: string
-      year:
-        type: integer
-    type: object
   handlers.TrackDTO:
     properties:
       album:
@@ -367,43 +336,13 @@ definitions:
     properties:
       body:
         type: string
-      description:
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-    type: object
-  handlers.createLogseqTaskRequest:
-    properties:
-      body:
-        example: Include the new journals endpoints.
-        type: string
       deadline:
-        example: "2025-12-23"
         type: string
       description:
-        example: Write release notes
         type: string
       scheduled:
-        example: "2025-12-23T11:00:00Z"
         type: string
       status:
-        example: TODO
-        type: string
-      tags:
-        example:
-        - tag1
-        - tag2
-        items:
-          type: string
-        type: array
-    type: object
-  handlers.createNoteRequest:
-    properties:
-      body:
-        type: string
-      description:
         type: string
       tags:
         items:
@@ -860,25 +799,6 @@ paths:
       summary: List journals
       tags:
       - journals
-    post:
-      consumes:
-      - application/json
-      operationId: createJournalEntry
-      parameters:
-      - description: Journal entry payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.createJournalEntryRequest'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-      summary: Append a journal entry for today
-      tags:
-      - journals
   /journals/{year}/{month}:
     get:
       operationId: listJournalsByMonth
@@ -977,6 +897,158 @@ paths:
       summary: Upload journal asset
       tags:
       - journals
+  /journals/entries:
+    get:
+      parameters:
+      - description: Filter by year
+        in: query
+        name: year
+        type: integer
+      - description: Filter by month (1-12)
+        in: query
+        name: month
+        type: integer
+      - description: Filter by day (1-31)
+        in: query
+        name: day
+        type: integer
+      - description: Entry type (task|misc|note)
+        in: query
+        name: type
+        type: string
+      - collectionFormat: csv
+        description: Statuses filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: statuses
+        type: array
+      - collectionFormat: csv
+        description: Status filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: status
+        type: array
+      - collectionFormat: csv
+        description: Tags filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: tags
+        type: array
+      - collectionFormat: csv
+        description: Tags filter (comma-separated or repeated)
+        in: query
+        items:
+          type: string
+        name: tag
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.JournalEntryDTO'
+            type: array
+      summary: List journal entries
+      tags:
+      - journals
+    post:
+      consumes:
+      - application/json
+      operationId: createJournalEntry
+      parameters:
+      - description: Journal entry payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createJournalEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Append a journal entry for today
+      tags:
+      - journals
+  /journals/entries/{year}/{month}/{day}/{hash}:
+    delete:
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete journal entry by hash
+      tags:
+      - journals
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      - description: Entry hash for concurrency
+        in: header
+        name: If-Match
+        required: true
+        type: string
+      - description: Updated entry payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateJournalEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.JournalEntryDTO'
+      summary: Update journal entry by hash
+      tags:
+      - journals
   /journals/tags:
     get:
       parameters:
@@ -1028,129 +1100,6 @@ paths:
       summary: Get journal tag graph for a tag
       tags:
       - journals
-  /notes:
-    get:
-      parameters:
-      - description: Filter by year
-        in: query
-        name: year
-        type: integer
-      - description: Filter by month (1-12)
-        in: query
-        name: month
-        type: integer
-      - description: Filter by day (1-31)
-        in: query
-        name: day
-        type: integer
-      - description: Filter by tag
-        in: query
-        name: tag
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/handlers.NoteDTO'
-            type: array
-      summary: List notes
-      tags:
-      - notes
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Note payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.createNoteRequest'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-      summary: Append a note entry for today
-      tags:
-      - notes
-  /notes/{year}/{month}/{day}/{hash}:
-    delete:
-      parameters:
-      - description: Year
-        in: path
-        name: year
-        required: true
-        type: integer
-      - description: Month
-        in: path
-        name: month
-        required: true
-        type: integer
-      - description: Day
-        in: path
-        name: day
-        required: true
-        type: integer
-      - description: Entry hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Delete note by hash
-      tags:
-      - notes
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Year
-        in: path
-        name: year
-        required: true
-        type: integer
-      - description: Month
-        in: path
-        name: month
-        required: true
-        type: integer
-      - description: Day
-        in: path
-        name: day
-        required: true
-        type: integer
-      - description: Entry hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      - description: Entry hash for concurrency
-        in: header
-        name: If-Match
-        required: true
-        type: string
-      - description: Updated entry payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.updateJournalEntryRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.NoteDTO'
-      summary: Update note by hash
-      tags:
-      - notes
   /playlists:
     get:
       produces:
@@ -1491,146 +1440,6 @@ paths:
       summary: List available setting keys
       tags:
       - settings
-  /tasks:
-    get:
-      parameters:
-      - collectionFormat: csv
-        description: Statuses filter (comma-separated or repeated)
-        in: query
-        items:
-          type: string
-        name: statuses
-        type: array
-      - collectionFormat: csv
-        description: Status filter (comma-separated or repeated)
-        in: query
-        items:
-          type: string
-        name: status
-        type: array
-      - collectionFormat: csv
-        description: Tags filter (comma-separated or repeated)
-        in: query
-        items:
-          type: string
-        name: tags
-        type: array
-      - description: Filter by year
-        in: query
-        name: year
-        type: integer
-      - description: Filter by month (1-12)
-        in: query
-        name: month
-        type: integer
-      - description: Filter by day (1-31)
-        in: query
-        name: day
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/handlers.TaskDTO'
-            type: array
-      summary: List tasks
-      tags:
-      - tasks
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Task payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.createLogseqTaskRequest'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-      summary: Append a task entry for today
-      tags:
-      - tasks
-  /tasks/{year}/{month}/{day}/{hash}:
-    delete:
-      parameters:
-      - description: Year
-        in: path
-        name: year
-        required: true
-        type: integer
-      - description: Month
-        in: path
-        name: month
-        required: true
-        type: integer
-      - description: Day
-        in: path
-        name: day
-        required: true
-        type: integer
-      - description: Entry hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Delete task by hash
-      tags:
-      - tasks
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Year
-        in: path
-        name: year
-        required: true
-        type: integer
-      - description: Month
-        in: path
-        name: month
-        required: true
-        type: integer
-      - description: Day
-        in: path
-        name: day
-        required: true
-        type: integer
-      - description: Entry hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      - description: Entry hash for concurrency
-        in: header
-        name: If-Match
-        required: true
-        type: string
-      - description: Updated entry payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.updateJournalEntryRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.TaskDTO'
-      summary: Update task by hash
-      tags:
-      - tasks
   /tracks:
     get:
       description: List all non-deleted tracks

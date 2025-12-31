@@ -40,21 +40,6 @@ var logseqTaskStatusSet = map[string]struct{}{
 	"WAITING":     {},
 }
 
-type createJournalEntryRequest struct {
-	Description string   `json:"description"`
-	Tags        []string `json:"tags,omitempty"`
-	Body        *string  `json:"body,omitempty"`
-}
-
-type createLogseqTaskRequest struct {
-	Status    string   `json:"status" example:"TODO"`
-	Tags      []string `json:"tags,omitempty" example:"tag1,tag2"`
-	Desc      string   `json:"description" example:"Write release notes"`
-	Deadline  *string  `json:"deadline,omitempty" example:"2025-12-23"`
-	Scheduled *string  `json:"scheduled,omitempty" example:"2025-12-23T11:00:00Z"`
-	Body      *string  `json:"body,omitempty" example:"Include the new journals endpoints."`
-}
-
 // ListJournalsByMonth godoc
 // @Summary List journals for a month
 // @Tags journals
@@ -109,7 +94,7 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		if err := queries.DeleteTasksByMonth(r.Context(), db.DeleteTasksByMonthParams{
+		if err := queries.DeleteJournalEntriesByMonth(r.Context(), db.DeleteJournalEntriesByMonthParams{
 			Year:  int64(year),
 			Month: int64(month),
 		}); err != nil {
@@ -171,46 +156,6 @@ func (h *Handlers) ListJournalsByMonth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, journalsDTOFromDB(rows))
-}
-
-// CreateJournalEntry godoc
-// @Summary Append a journal entry for today
-// @Tags journals
-// @Accept json
-// @Produce json
-// @ID createJournalEntry
-// @Param request body createJournalEntryRequest true "Journal entry payload"
-// @Success 204
-// @Router /journals [post]
-func (h *Handlers) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var body createJournalEntryRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-
-	description := strings.TrimSpace(body.Description)
-	if description == "" {
-		http.Error(w, "description required", http.StatusBadRequest)
-		return
-	}
-
-	entry := renderJournalEntry(body.Tags, description, body.Body)
-	if err := h.appendToTodayJournal(r.Context(), entry); err != nil {
-		if errors.Is(err, errJournalsFolderNotFound) {
-			http.Error(w, "journals folder not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // GetJournalDay godoc
@@ -505,55 +450,6 @@ func (h *Handlers) journalsFolder(ctx context.Context) (string, bool, error) {
 	return path, true, nil
 }
 
-// CreateTask godoc
-// @Summary Append a task entry for today
-// @Tags tasks
-// @Accept json
-// @Produce json
-// @Param request body createLogseqTaskRequest true "Task payload"
-// @Success 204
-// @Router /tasks [post]
-func (h *Handlers) CreateTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var body createLogseqTaskRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-
-	status := strings.TrimSpace(body.Status)
-	if status == "" {
-		http.Error(w, "status required", http.StatusBadRequest)
-		return
-	}
-	if _, ok := logseqTaskStatusSet[status]; !ok {
-		http.Error(w, "invalid status", http.StatusBadRequest)
-		return
-	}
-
-	description := strings.TrimSpace(body.Desc)
-	if description == "" {
-		http.Error(w, "description required", http.StatusBadRequest)
-		return
-	}
-
-	entry := renderTaskEntry(status, body.Tags, description, body.Deadline, body.Scheduled, body.Body)
-	if err := h.appendToTodayJournal(r.Context(), entry); err != nil {
-		if errors.Is(err, errJournalsFolderNotFound) {
-			http.Error(w, "journals folder not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
 func parseYearMonthParams(w http.ResponseWriter, r *http.Request) (int, int, bool) {
 	yearStr := chi.URLParam(r, "year")
 	monthStr := chi.URLParam(r, "month")
@@ -694,7 +590,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 		return err
 	}
 
-	if err := queries.DeleteTasksByDate(ctx, db.DeleteTasksByDateParams{
+	if err := queries.DeleteJournalEntriesByDate(ctx, db.DeleteJournalEntriesByDateParams{
 		Year:  int64(year),
 		Month: int64(month),
 		Day:   int64(day),
@@ -716,7 +612,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 		scheduled := nullStringFromString(entry.ScheduledAt)
 		deadline := nullStringFromString(entry.DeadlineAt)
 		status := nullStringFromString(entry.Status)
-		if _, err := queries.CreateTask(ctx, db.CreateTaskParams{
+		if _, err := queries.CreateJournalEntry(ctx, db.CreateJournalEntryParams{
 			Year:        int64(year),
 			Month:       int64(month),
 			Day:         int64(day),

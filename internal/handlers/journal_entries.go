@@ -17,9 +17,156 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// UpdateTaskByHash godoc
-// @Summary Update task by hash
-// @Tags tasks
+type createJournalEntryRequest struct {
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	Body        *string  `json:"body,omitempty"`
+	Status      *string  `json:"status,omitempty"`
+	Deadline    *string  `json:"deadline,omitempty"`
+	Scheduled   *string  `json:"scheduled,omitempty"`
+}
+
+type journalEntryListFilters struct {
+	Year     *int64
+	Month    *int64
+	Day      *int64
+	Type     *string
+	Statuses []string
+	Tags     []string
+}
+
+// ListJournalEntries godoc
+// @Summary List journal entries
+// @Tags journals
+// @Produce json
+// @Param year query int false "Filter by year"
+// @Param month query int false "Filter by month (1-12)"
+// @Param day query int false "Filter by day (1-31)"
+// @Param type query string false "Entry type (task|misc|note)"
+// @Param statuses query []string false "Statuses filter (comma-separated or repeated)"
+// @Param status query []string false "Status filter (comma-separated or repeated)"
+// @Param tags query []string false "Tags filter (comma-separated or repeated)"
+// @Param tag query []string false "Tags filter (comma-separated or repeated)"
+// @Success 200 {array} JournalEntryDTO
+// @Router /journals/entries [get]
+func (h *Handlers) ListJournalEntries(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := h.syncJournalsFromDisk(r.Context()); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	filters, ok := parseJournalEntryFilters(w, r)
+	if !ok {
+		return
+	}
+
+	var yearParam interface{}
+	if filters.Year != nil {
+		yearParam = *filters.Year
+	}
+	var monthParam interface{}
+	if filters.Month != nil {
+		monthParam = *filters.Month
+	}
+	var dayParam interface{}
+	if filters.Day != nil {
+		dayParam = *filters.Day
+	}
+	var typeParam interface{}
+	if filters.Type != nil {
+		typeParam = *filters.Type
+	}
+	var statusesParam interface{}
+	if len(filters.Statuses) > 0 {
+		data, err := json.Marshal(filters.Statuses)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		statusesParam = string(data)
+	}
+	var tagsParam interface{}
+	if len(filters.Tags) > 0 {
+		data, err := json.Marshal(filters.Tags)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		tagsParam = string(data)
+	}
+
+	rows, err := h.App.Queries.ListJournalEntries(r.Context(), db.ListJournalEntriesParams{
+		Column1: yearParam,
+		Column2: monthParam,
+		Column3: dayParam,
+		Column4: typeParam,
+		Column5: statusesParam,
+		Column6: tagsParam,
+	})
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, journalEntriesDTOFromDB(rows))
+}
+
+// CreateJournalEntry godoc
+// @Summary Append a journal entry for today
+// @Tags journals
+// @Accept json
+// @Produce json
+// @ID createJournalEntry
+// @Param request body createJournalEntryRequest true "Journal entry payload"
+// @Success 204
+// @Router /journals/entries [post]
+func (h *Handlers) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body createJournalEntryRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	description := strings.TrimSpace(body.Description)
+	if description == "" {
+		http.Error(w, "description required", http.StatusBadRequest)
+		return
+	}
+
+	entry, ok := renderEntryFromRequest(w, body, description)
+	if !ok {
+		return
+	}
+
+	if err := h.appendToTodayJournal(r.Context(), entry); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// UpdateJournalEntryByHash godoc
+// @Summary Update journal entry by hash
+// @Tags journals
 // @Accept json
 // @Produce json
 // @Param year path int true "Year"
@@ -28,56 +175,183 @@ import (
 // @Param hash path string true "Entry hash"
 // @Param If-Match header string true "Entry hash for concurrency"
 // @Param request body updateJournalEntryRequest true "Updated entry payload"
-// @Success 200 {object} TaskDTO
-// @Router /tasks/{year}/{month}/{day}/{hash} [put]
-func (h *Handlers) UpdateTaskByHash(w http.ResponseWriter, r *http.Request) {
-	h.updateJournalEntryByHash(w, r, "task")
+// @Success 200 {object} JournalEntryDTO
+// @Router /journals/entries/{year}/{month}/{day}/{hash} [put]
+func (h *Handlers) UpdateJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
+	h.updateJournalEntryByHash(w, r)
 }
 
-// DeleteTaskByHash godoc
-// @Summary Delete task by hash
-// @Tags tasks
+// DeleteJournalEntryByHash godoc
+// @Summary Delete journal entry by hash
+// @Tags journals
 // @Param year path int true "Year"
 // @Param month path int true "Month"
 // @Param day path int true "Day"
 // @Param hash path string true "Entry hash"
 // @Success 204
-// @Router /tasks/{year}/{month}/{day}/{hash} [delete]
-func (h *Handlers) DeleteTaskByHash(w http.ResponseWriter, r *http.Request) {
-	h.deleteJournalEntryByHash(w, r, "task")
+// @Router /journals/entries/{year}/{month}/{day}/{hash} [delete]
+func (h *Handlers) DeleteJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
+	h.deleteJournalEntryByHash(w, r)
 }
 
-// UpdateNoteByHash godoc
-// @Summary Update note by hash
-// @Tags notes
-// @Accept json
-// @Produce json
-// @Param year path int true "Year"
-// @Param month path int true "Month"
-// @Param day path int true "Day"
-// @Param hash path string true "Entry hash"
-// @Param If-Match header string true "Entry hash for concurrency"
-// @Param request body updateJournalEntryRequest true "Updated entry payload"
-// @Success 200 {object} NoteDTO
-// @Router /notes/{year}/{month}/{day}/{hash} [put]
-func (h *Handlers) UpdateNoteByHash(w http.ResponseWriter, r *http.Request) {
-	h.updateJournalEntryByHash(w, r, "misc")
+func renderEntryFromRequest(w http.ResponseWriter, body createJournalEntryRequest, description string) (string, bool) {
+	if body.Status == nil {
+		if hasTimestamp(body.Deadline) || hasTimestamp(body.Scheduled) {
+			http.Error(w, "status required for scheduled/deadline", http.StatusBadRequest)
+			return "", false
+		}
+		return renderJournalEntry(body.Tags, description, body.Body), true
+	}
+
+	status := strings.TrimSpace(*body.Status)
+	if status == "" {
+		http.Error(w, "status required", http.StatusBadRequest)
+		return "", false
+	}
+	if _, ok := logseqTaskStatusSet[status]; !ok {
+		http.Error(w, "invalid status", http.StatusBadRequest)
+		return "", false
+	}
+
+	return renderTaskEntry(status, body.Tags, description, body.Deadline, body.Scheduled, body.Body), true
 }
 
-// DeleteNoteByHash godoc
-// @Summary Delete note by hash
-// @Tags notes
-// @Param year path int true "Year"
-// @Param month path int true "Month"
-// @Param day path int true "Day"
-// @Param hash path string true "Entry hash"
-// @Success 204
-// @Router /notes/{year}/{month}/{day}/{hash} [delete]
-func (h *Handlers) DeleteNoteByHash(w http.ResponseWriter, r *http.Request) {
-	h.deleteJournalEntryByHash(w, r, "misc")
+func hasTimestamp(value *string) bool {
+	if value == nil {
+		return false
+	}
+	return strings.TrimSpace(*value) != ""
 }
 
-func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Request, entryType string) {
+func parseJournalEntryFilters(w http.ResponseWriter, r *http.Request) (journalEntryListFilters, bool) {
+	var filters journalEntryListFilters
+
+	year, ok := parseOptionalIntQueryParam(w, r, "year", 0, 9999)
+	if !ok {
+		return filters, false
+	}
+	month, ok := parseOptionalIntQueryParam(w, r, "month", 1, 12)
+	if !ok {
+		return filters, false
+	}
+	day, ok := parseOptionalIntQueryParam(w, r, "day", 1, 31)
+	if !ok {
+		return filters, false
+	}
+	filters.Year = year
+	filters.Month = month
+	filters.Day = day
+
+	entryType := strings.TrimSpace(r.URL.Query().Get("type"))
+	if entryType != "" {
+		normalized, ok := normalizeEntryType(entryType)
+		if !ok {
+			http.Error(w, "invalid type", http.StatusBadRequest)
+			return filters, false
+		}
+		filters.Type = &normalized
+	}
+
+	statuses := append(parseQueryList(r, "statuses"), parseQueryList(r, "status")...)
+	filters.Statuses = normalizeStatuses(statuses)
+
+	tags := append(parseQueryList(r, "tags"), parseQueryList(r, "tag")...)
+	filters.Tags = normalizeTags(tags)
+
+	return filters, true
+}
+
+func normalizeEntryType(value string) (string, bool) {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch normalized {
+	case "task":
+		return "task", true
+	case "note":
+		return "misc", true
+	case "misc":
+		return "misc", true
+	default:
+		return "", false
+	}
+}
+
+func parseQueryList(r *http.Request, key string) []string {
+	values := r.URL.Query()[key]
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		for _, part := range strings.Split(value, ",") {
+			trimmed := strings.TrimSpace(part)
+			if trimmed == "" {
+				continue
+			}
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
+
+func normalizeStatuses(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		normalized := strings.ToUpper(trimmed)
+		for _, status := range expandTaskStatusFilter(normalized) {
+			if _, ok := seen[status]; ok {
+				continue
+			}
+			seen[status] = struct{}{}
+			out = append(out, status)
+		}
+	}
+	return out
+}
+
+func normalizeTags(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		out = append(out, trimmed)
+	}
+	return out
+}
+
+func expandTaskStatusFilter(status string) []string {
+	switch status {
+	case "IN-PROGRESS":
+		return []string{"IN-PROGRESS", "DOING", "WAITING"}
+	case "TODO":
+		return []string{"TODO", "NOW", "LATER"}
+	case "DONE":
+		return []string{"DONE"}
+	case "CANCELLED":
+		return []string{"CANCELLED"}
+	default:
+		return []string{status}
+	}
+}
+
+func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -119,14 +393,6 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "invalid entry", http.StatusBadRequest)
 		return
 	}
-	if entryType == "task" && newEntry.Type != "task" {
-		http.Error(w, "task entry required", http.StatusBadRequest)
-		return
-	}
-	if entryType == "misc" && newEntry.Type == "task" {
-		http.Error(w, "note entry required", http.StatusBadRequest)
-		return
-	}
 
 	h.journalSyncMu.Lock()
 	defer h.journalSyncMu.Unlock()
@@ -156,7 +422,7 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 	content := string(data)
 	lines := strings.Split(content, "\n")
 	entries := parseLogseqEntries(content)
-	start, end, ok := findEntryRange(entries, hash, entryType)
+	start, end, ok := findEntryRange(entries, hash)
 	if !ok {
 		http.Error(w, "entry not found", http.StatusNotFound)
 		return
@@ -184,14 +450,10 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if entryType == "task" {
-		writeJSON(w, taskDTOFromDB(entryRow))
-		return
-	}
-	writeJSON(w, noteDTOFromDB(entryRow))
+	writeJSON(w, journalEntryDTOFromDB(entryRow))
 }
 
-func (h *Handlers) deleteJournalEntryByHash(w http.ResponseWriter, r *http.Request, entryType string) {
+func (h *Handlers) deleteJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -236,7 +498,7 @@ func (h *Handlers) deleteJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 	content := string(data)
 	lines := strings.Split(content, "\n")
 	entries := parseLogseqEntries(content)
-	start, end, ok := findEntryRange(entries, hash, entryType)
+	start, end, ok := findEntryRange(entries, hash)
 	if !ok {
 		http.Error(w, "entry not found", http.StatusNotFound)
 		return
@@ -289,7 +551,7 @@ func (h *Handlers) syncJournalDayAfterEdit(ctx context.Context, year, month, day
 	return tx.Commit()
 }
 
-func findEntryRange(entries []logseqEntry, hash string, entryType string) (int, int, bool) {
+func findEntryRange(entries []logseqEntry, hash string) (int, int, bool) {
 	lineIndex := 0
 	for _, entry := range entries {
 		start := lineIndex
@@ -301,12 +563,6 @@ func findEntryRange(entries []logseqEntry, hash string, entryType string) (int, 
 		end := lineIndex - 1
 
 		if entry.Hash == hash {
-			if entryType == "task" && entry.Type != "task" {
-				return 0, 0, false
-			}
-			if entryType == "misc" && entry.Type == "task" {
-				return 0, 0, false
-			}
 			return start, end, true
 		}
 	}
