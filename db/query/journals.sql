@@ -32,7 +32,7 @@ WHERE (?1 IS NULL OR year = ?1)
     OR EXISTS (
       SELECT 1
       FROM json_each(journals.tags)
-      WHERE value = ?4
+      WHERE LOWER(value) = LOWER(?4)
     )
   )
 ORDER BY year DESC, month DESC, day DESC;

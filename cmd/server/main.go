@@ -129,6 +129,8 @@ func main() {
 			r.Get("/", h.ListJournals)
 			r.Get("/assets", h.GetJournalAsset)
 			r.Post("/assets", h.UploadJournalAsset)
+			r.Get("/tags/graph", h.ListJournalTagGraph)
+			r.Get("/tags/graph/{tag}", h.GetJournalTagGraph)
 			r.Get("/tags", h.ListJournalTags)
 			r.Get("/{year}/{month}", h.ListJournalsByMonth)
 			r.Get("/{year}/{month}/{day}", h.GetJournalDay)

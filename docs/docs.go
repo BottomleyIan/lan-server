@@ -719,6 +719,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/journals/tags/graph": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "List journal tag graph",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.TagGraphDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/journals/tags/graph/{tag}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Get journal tag graph for a tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag",
+                        "name": "tag",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TagGraphDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/journals/{year}/{month}": {
             "get": {
                 "produces": [
@@ -2406,6 +2456,31 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "key": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TagEdgeDTO": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TagGraphDTO": {
+            "type": "object",
+            "properties": {
+                "related": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.TagEdgeDTO"
+                    }
+                },
+                "tag": {
                     "type": "string"
                 }
             }

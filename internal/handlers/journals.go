@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -353,6 +354,65 @@ func (h *Handlers) ListJournalTags(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
+// ListJournalTagGraph godoc
+// @Summary List journal tag graph
+// @Tags journals
+// @Produce json
+// @Success 200 {array} TagGraphDTO
+// @Router /journals/tags/graph [get]
+func (h *Handlers) ListJournalTagGraph(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	start := time.Now()
+	graph, err := h.buildTagGraph(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("tags graph computed in %s", time.Since(start))
+	writeJSON(w, graph)
+}
+
+// GetJournalTagGraph godoc
+// @Summary Get journal tag graph for a tag
+// @Tags journals
+// @Produce json
+// @Param tag path string true "Tag"
+// @Success 200 {object} TagGraphDTO
+// @Router /journals/tags/graph/{tag} [get]
+func (h *Handlers) GetJournalTagGraph(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	tag := strings.TrimSpace(chi.URLParam(r, "tag"))
+	if tag == "" {
+		http.Error(w, "tag required", http.StatusBadRequest)
+		return
+	}
+
+	start := time.Now()
+	graph, err := h.buildTagGraph(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("tags graph computed in %s", time.Since(start))
+
+	lower := strings.ToLower(tag)
+	for _, node := range graph {
+		if strings.ToLower(node.Tag) == lower {
+			writeJSON(w, node)
+			return
+		}
+	}
+	http.Error(w, "tag not found", http.StatusNotFound)
+}
+
 func (h *Handlers) syncJournalsFromDisk(ctx context.Context) error {
 	h.journalSyncMu.Lock()
 	defer h.journalSyncMu.Unlock()
@@ -582,8 +642,7 @@ func extractJournalTags(content string) []string {
 	for tag := range unique {
 		out = append(out, tag)
 	}
-	sort.Strings(out)
-	return out
+	return normalizeTagsLower(out)
 }
 
 type logseqEntry struct {
@@ -619,7 +678,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 	}
 
 	tags := extractJournalTags(string(data))
-	tagsJSON, err := json.Marshal(tags)
+	tagsJSON, err := json.Marshal(normalizeTagsLower(tags))
 	if err != nil {
 		return err
 	}
@@ -650,7 +709,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 			continue
 		}
 		body := nullStringFromString(strings.TrimRight(entry.Body, "\n"))
-		tagsJSON, err := json.Marshal(entry.Tags)
+		tagsJSON, err := json.Marshal(normalizeTagsLower(entry.Tags))
 		if err != nil {
 			return err
 		}
@@ -833,6 +892,28 @@ func buildEntryBody(rawLine string, bodyLines []string) string {
 		return firstLine
 	}
 	return firstLine + "\n" + strings.Join(bodyLines[:end], "\n")
+}
+
+func normalizeTagsLower(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(tags))
+	out := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed == "" {
+			continue
+		}
+		normalized := strings.ToLower(trimmed)
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func hashLogseqBlock(block string) string {

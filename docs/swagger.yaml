@@ -257,6 +257,22 @@ definitions:
       key:
         type: string
     type: object
+  handlers.TagEdgeDTO:
+    properties:
+      count:
+        type: integer
+      tag:
+        type: string
+    type: object
+  handlers.TagGraphDTO:
+    properties:
+      related:
+        items:
+          $ref: '#/definitions/handlers.TagEdgeDTO'
+        type: array
+      tag:
+        type: string
+    type: object
   handlers.TaskDTO:
     properties:
       body:
@@ -978,6 +994,38 @@ paths:
               type: string
             type: array
       summary: List journal tags
+      tags:
+      - journals
+  /journals/tags/graph:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.TagGraphDTO'
+            type: array
+      summary: List journal tag graph
+      tags:
+      - journals
+  /journals/tags/graph/{tag}:
+    get:
+      parameters:
+      - description: Tag
+        in: path
+        name: tag
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TagGraphDTO'
+      summary: Get journal tag graph for a tag
       tags:
       - journals
   /notes:

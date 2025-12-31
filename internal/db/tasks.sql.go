@@ -178,7 +178,7 @@ WHERE status IS NULL
     OR EXISTS (
       SELECT 1
       FROM json_each(journal_entries.tags)
-      WHERE value = ?4
+      WHERE LOWER(value) = LOWER(?4)
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC
@@ -267,7 +267,7 @@ WHERE status IS NOT NULL
     OR EXISTS (
       SELECT 1
       FROM json_each(journal_entries.tags)
-      WHERE value IN (SELECT value FROM json_each(?4))
+      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?4))
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC
