@@ -54,6 +54,10 @@ WHERE status IS NOT NULL
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC;
 
+-- name: ListJournalEntryTags :many
+SELECT tags
+FROM journal_entries;
+
 -- name: GetJournalEntryByDateHash :one
 SELECT *
 FROM journal_entries

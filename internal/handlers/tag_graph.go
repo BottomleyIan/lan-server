@@ -17,7 +17,7 @@ type TagEdgeDTO struct {
 }
 
 func (h *Handlers) buildTagGraph(ctx context.Context) ([]TagGraphDTO, error) {
-	rows, err := h.App.Queries.ListJournalTags(ctx)
+	rows, err := h.App.Queries.ListJournalEntryTags(ctx)
 	if err != nil {
 		return nil, err
 	}
