@@ -4,6 +4,7 @@ INSERT INTO journal_entries (
   year,
   month,
   day,
+  journal_date,
   position,
   title,
   raw_line,
@@ -15,7 +16,7 @@ INSERT INTO journal_entries (
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListJournalEntries :many
@@ -23,36 +24,24 @@ SELECT *
 FROM journal_entries
 WHERE (
     ?1 IS NULL
-    OR year = ?1
-    OR substr(scheduled_at, 1, 4) = printf('%04d', ?1)
-    OR substr(deadline_at, 1, 4) = printf('%04d', ?1)
+    OR journal_date LIKE ?1
+    OR scheduled_at LIKE ?1
+    OR deadline_at LIKE ?1
   )
   AND (
     ?2 IS NULL
-    OR month = ?2
-    OR substr(scheduled_at, 6, 2) = printf('%02d', ?2)
-    OR substr(deadline_at, 6, 2) = printf('%02d', ?2)
+    OR type = ?2
   )
   AND (
     ?3 IS NULL
-    OR day = ?3
-    OR substr(scheduled_at, 9, 2) = printf('%02d', ?3)
-    OR substr(deadline_at, 9, 2) = printf('%02d', ?3)
+    OR status IN (SELECT value FROM json_each(?3))
   )
   AND (
     ?4 IS NULL
-    OR type = ?4
-  )
-  AND (
-    ?5 IS NULL
-    OR status IN (SELECT value FROM json_each(?5))
-  )
-  AND (
-    ?6 IS NULL
     OR EXISTS (
       SELECT 1
       FROM json_each(journal_entries.tags)
-      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?6))
+      WHERE LOWER(value) IN (SELECT LOWER(value) FROM json_each(?4))
     )
   )
 ORDER BY year DESC, month DESC, day DESC, position ASC;

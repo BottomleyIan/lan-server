@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -70,16 +71,9 @@ func (h *Handlers) ListJournalEntries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var yearParam interface{}
-	if filters.Year != nil {
-		yearParam = *filters.Year
-	}
-	var monthParam interface{}
-	if filters.Month != nil {
-		monthParam = *filters.Month
-	}
-	var dayParam interface{}
-	if filters.Day != nil {
-		dayParam = *filters.Day
+	dateFilter := buildDateFilter(filters.Year, filters.Month, filters.Day)
+	if dateFilter != nil {
+		yearParam = *dateFilter
 	}
 	var typeParam interface{}
 	if filters.Type != nil {
@@ -106,11 +100,9 @@ func (h *Handlers) ListJournalEntries(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.App.Queries.ListJournalEntries(r.Context(), db.ListJournalEntriesParams{
 		Column1: yearParam,
-		Column2: monthParam,
-		Column3: dayParam,
-		Column4: typeParam,
-		Column5: statusesParam,
-		Column6: tagsParam,
+		Column2: typeParam,
+		Column3: statusesParam,
+		Column4: tagsParam,
 	})
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -349,6 +341,31 @@ func expandTaskStatusFilter(status string) []string {
 	default:
 		return []string{status}
 	}
+}
+
+func buildDateFilter(year, month, day *int64) *string {
+	if year == nil && month == nil && day == nil {
+		return nil
+	}
+
+	yearPart := "%"
+	if year != nil {
+		yearPart = fmt.Sprintf("%04d", *year)
+	}
+	monthPart := "%"
+	if month != nil {
+		monthPart = fmt.Sprintf("%02d", *month)
+	}
+	dayPart := "%"
+	if day != nil {
+		dayPart = fmt.Sprintf("%02d", *day)
+	}
+
+	pattern := yearPart + "-" + monthPart + "-" + dayPart
+	if !strings.HasSuffix(pattern, "%") {
+		pattern += "%"
+	}
+	return &pattern
 }
 
 func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Request) {

@@ -599,6 +599,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 	}
 
 	entries := parseLogseqEntries(string(data))
+	journalDate := fmt.Sprintf("%04d-%02d-%02d", year, month, day)
 	for idx, entry := range entries {
 		title := strings.TrimSpace(entry.Title)
 		if entry.Type == "task" && title == "" {
@@ -616,6 +617,7 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 			Year:        int64(year),
 			Month:       int64(month),
 			Day:         int64(day),
+			JournalDate: journalDate,
 			Position:    int64(idx),
 			Title:       title,
 			RawLine:     entry.RawLine,

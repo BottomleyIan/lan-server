@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   year INTEGER NOT NULL,
   month INTEGER NOT NULL,
   day INTEGER NOT NULL,
+  journal_date TEXT NOT NULL,
   position INTEGER NOT NULL,
   title TEXT NOT NULL,
   raw_line TEXT NOT NULL,

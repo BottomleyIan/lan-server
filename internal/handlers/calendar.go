@@ -44,13 +44,16 @@ func (h *Handlers) GetCalendarDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	dateFilter := buildDateFilter(&year, &month, &day)
+	var dateParam interface{}
+	if dateFilter != nil {
+		dateParam = *dateFilter
+	}
 	rows, err := h.App.Queries.ListJournalEntries(r.Context(), db.ListJournalEntriesParams{
-		Column1: year,
-		Column2: month,
-		Column3: day,
+		Column1: dateParam,
+		Column2: nil,
+		Column3: nil,
 		Column4: nil,
-		Column5: nil,
-		Column6: nil,
 	})
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)

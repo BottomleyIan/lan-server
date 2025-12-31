@@ -58,6 +58,7 @@ type JournalEntry struct {
 	Year        int64
 	Month       int64
 	Day         int64
+	JournalDate string
 	Position    int64
 	Title       string
 	RawLine     string
