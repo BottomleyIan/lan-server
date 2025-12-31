@@ -886,6 +886,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/journals/property-keys": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "List journal property keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/journals/property-keys/{key}/values": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "List journal property values for a key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Property key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/journals/tags": {
             "get": {
                 "produces": [
@@ -2104,6 +2157,12 @@ const docTemplate = `{
                 },
                 "position": {
                     "type": "integer"
+                },
+                "property_keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "raw_line": {
                     "type": "string"

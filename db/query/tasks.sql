@@ -12,11 +12,12 @@ INSERT INTO journal_entries (
   body,
   status,
   tags,
+  property_keys,
   type,
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListJournalEntries :many
@@ -49,6 +50,19 @@ ORDER BY year DESC, month DESC, day DESC, position ASC;
 -- name: ListJournalEntryTags :many
 SELECT tags
 FROM journal_entries;
+
+-- name: ListJournalEntryPropertyKeys :many
+SELECT property_keys
+FROM journal_entries;
+
+-- name: ListJournalEntryBodiesByPropertyKey :many
+SELECT body
+FROM journal_entries
+WHERE EXISTS (
+  SELECT 1
+  FROM json_each(journal_entries.property_keys)
+  WHERE LOWER(value) = LOWER(?)
+);
 
 -- name: GetJournalEntryByDateHash :one
 SELECT *

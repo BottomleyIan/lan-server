@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   body TEXT NULL,
   status TEXT NULL,
   tags TEXT NOT NULL DEFAULT '[]',
+  property_keys TEXT NOT NULL DEFAULT '[]',
   type TEXT NOT NULL,
   scheduled_at TEXT NULL,
   deadline_at TEXT NULL,

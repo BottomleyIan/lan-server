@@ -154,6 +154,10 @@ definitions:
         type: integer
       position:
         type: integer
+      property_keys:
+        items:
+          type: string
+        type: array
       raw_line:
         type: string
       scheduled_at:
@@ -1047,6 +1051,40 @@ paths:
           schema:
             $ref: '#/definitions/handlers.JournalEntryDTO'
       summary: Update journal entry by hash
+      tags:
+      - journals
+  /journals/property-keys:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List journal property keys
+      tags:
+      - journals
+  /journals/property-keys/{key}/values:
+    get:
+      parameters:
+      - description: Property key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List journal property values for a key
       tags:
       - journals
   /journals/tags:

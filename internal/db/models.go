@@ -54,23 +54,24 @@ type Journal struct {
 }
 
 type JournalEntry struct {
-	ID          int64
-	Year        int64
-	Month       int64
-	Day         int64
-	JournalDate string
-	Position    int64
-	Title       string
-	RawLine     string
-	Hash        string
-	Body        dbtypes.NullString
-	Status      dbtypes.NullString
-	Tags        string
-	Type        string
-	ScheduledAt dbtypes.NullString
-	DeadlineAt  dbtypes.NullString
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           int64
+	Year         int64
+	Month        int64
+	Day          int64
+	JournalDate  string
+	Position     int64
+	Title        string
+	RawLine      string
+	Hash         string
+	Body         dbtypes.NullString
+	Status       dbtypes.NullString
+	Tags         string
+	PropertyKeys string
+	Type         string
+	ScheduledAt  dbtypes.NullString
+	DeadlineAt   dbtypes.NullString
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type Playlist struct {

@@ -543,17 +543,95 @@ func extractJournalTags(content string) []string {
 	return normalizeTagsLower(out)
 }
 
+// ListJournalPropertyKeys godoc
+// @Summary List journal property keys
+// @Tags journals
+// @Produce json
+// @Success 200 {array} string
+// @Router /journals/property-keys [get]
+func (h *Handlers) ListJournalPropertyKeys(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	rows, err := h.App.Queries.ListJournalEntryPropertyKeys(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	unique := make(map[string]struct{})
+	for _, raw := range rows {
+		for _, key := range tagsFromJSONString(raw) {
+			unique[key] = struct{}{}
+		}
+	}
+
+	out := make([]string, 0, len(unique))
+	for key := range unique {
+		out = append(out, key)
+	}
+	sort.Strings(out)
+	writeJSON(w, out)
+}
+
+// ListJournalPropertyValues godoc
+// @Summary List journal property values for a key
+// @Tags journals
+// @Produce json
+// @Param key path string true "Property key"
+// @Success 200 {array} string
+// @Router /journals/property-keys/{key}/values [get]
+func (h *Handlers) ListJournalPropertyValues(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	key := strings.TrimSpace(chi.URLParam(r, "key"))
+	if key == "" {
+		http.Error(w, "key required", http.StatusBadRequest)
+		return
+	}
+
+	rows, err := h.App.Queries.ListJournalEntryBodiesByPropertyKey(r.Context(), key)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	needle := strings.ToLower(key)
+	unique := make(map[string]struct{})
+	for _, body := range rows {
+		if !body.Valid {
+			continue
+		}
+		for _, value := range extractPropertyValues(body.String, needle) {
+			unique[value] = struct{}{}
+		}
+	}
+
+	out := make([]string, 0, len(unique))
+	for value := range unique {
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	writeJSON(w, out)
+}
+
 type logseqEntry struct {
-	Title       string
-	RawLine     string
-	RawBlock    string
-	Hash        string
-	Body        string
-	Status      string
-	Tags        []string
-	Type        string
-	ScheduledAt string
-	DeadlineAt  string
+	Title        string
+	RawLine      string
+	RawBlock     string
+	Hash         string
+	Body         string
+	Status       string
+	Tags         []string
+	PropertyKeys []string
+	Type         string
+	ScheduledAt  string
+	DeadlineAt   string
 }
 
 var errJournalsFolderNotFound = errors.New("journals folder not found")
@@ -612,24 +690,29 @@ func syncJournalFromFile(ctx context.Context, queries *db.Queries, year, month, 
 		if err != nil {
 			return err
 		}
+		propertyKeysJSON, err := json.Marshal(normalizePropertyKeys(entry.PropertyKeys))
+		if err != nil {
+			return err
+		}
 		scheduled := nullStringFromString(entry.ScheduledAt)
 		deadline := nullStringFromString(entry.DeadlineAt)
 		status := nullStringFromString(entry.Status)
 		if _, err := queries.CreateJournalEntry(ctx, db.CreateJournalEntryParams{
-			Year:        int64(year),
-			Month:       int64(month),
-			Day:         int64(day),
-			JournalDate: journalDate,
-			Position:    int64(idx),
-			Title:       title,
-			RawLine:     entry.RawLine,
-			Hash:        entry.Hash,
-			Body:        body,
-			Status:      status,
-			Tags:        string(tagsJSON),
-			Type:        entry.Type,
-			ScheduledAt: scheduled,
-			DeadlineAt:  deadline,
+			Year:         int64(year),
+			Month:        int64(month),
+			Day:          int64(day),
+			JournalDate:  journalDate,
+			Position:     int64(idx),
+			Title:        title,
+			RawLine:      entry.RawLine,
+			Hash:         entry.Hash,
+			Body:         body,
+			Status:       status,
+			Tags:         string(tagsJSON),
+			PropertyKeys: string(propertyKeysJSON),
+			Type:         entry.Type,
+			ScheduledAt:  scheduled,
+			DeadlineAt:   deadline,
 		}); err != nil {
 			return err
 		}
@@ -644,6 +727,7 @@ func parseLogseqEntries(content string) []logseqEntry {
 	var current *logseqEntry
 	var bodyLines []string
 	var tagSet map[string]struct{}
+	var propertyKeySet map[string]struct{}
 
 	flush := func() {
 		if current == nil {
@@ -651,12 +735,14 @@ func parseLogseqEntries(content string) []logseqEntry {
 		}
 		current.Body = buildEntryBody(current.RawLine, bodyLines)
 		current.Tags = sortedTagsFromSet(tagSet)
+		current.PropertyKeys = sortedTagsFromSet(propertyKeySet)
 		current.RawBlock = buildLogseqBlock(current.RawLine, bodyLines)
 		current.Hash = hashLogseqBlock(current.RawBlock)
 		entries = append(entries, *current)
 		current = nil
 		bodyLines = nil
 		tagSet = nil
+		propertyKeySet = nil
 	}
 
 	for _, line := range lines {
@@ -682,8 +768,10 @@ func parseLogseqEntries(content string) []logseqEntry {
 				rawTitle = strings.TrimSpace(strings.TrimPrefix(rest, status))
 			}
 			tagSet = make(map[string]struct{})
+			propertyKeySet = make(map[string]struct{})
 			collectLogseqTags(tagSet, rawTitle)
 			collectLogseqPropertyTags(tagSet, rawTitle)
+			collectLogseqPropertyKeys(propertyKeySet, rawTitle)
 			title := strings.TrimSpace(stripLogseqTags(rawTitle))
 			current = &logseqEntry{
 				Title:   title,
@@ -699,6 +787,7 @@ func parseLogseqEntries(content string) []logseqEntry {
 			bodyLines = append(bodyLines, line)
 			collectLogseqTags(tagSet, line)
 			collectLogseqPropertyTags(tagSet, line)
+			collectLogseqPropertyKeys(propertyKeySet, line)
 			if current.ScheduledAt == "" && strings.HasPrefix(trimmed, "SCHEDULED:") {
 				current.ScheduledAt = parseLogseqTimestamp(trimmed, "SCHEDULED:")
 			}
@@ -763,11 +852,123 @@ func collectLogseqPropertyTags(target map[string]struct{}, text string) {
 		return
 	}
 	target[key] = struct{}{}
-	value = strings.TrimSpace(stripLogseqTags(value))
-	if value == "" {
+	collectPropertyValues(target, value)
+}
+
+func collectLogseqPropertyKeys(target map[string]struct{}, text string) {
+	if target == nil {
 		return
 	}
-	target[value] = struct{}{}
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return
+	}
+	parts := strings.SplitN(trimmed, "::", 2)
+	if len(parts) < 2 {
+		return
+	}
+	key := strings.TrimSpace(parts[0])
+	if key == "" {
+		return
+	}
+	target[key] = struct{}{}
+}
+
+func collectPropertyValues(target map[string]struct{}, value string) {
+	if target == nil {
+		return
+	}
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return
+	}
+	tagValues := extractLogseqTagValues(trimmed)
+	if len(tagValues) > 0 {
+		for _, tag := range tagValues {
+			target[tag] = struct{}{}
+		}
+		return
+	}
+	cleaned := sanitizePropertyValue(trimmed)
+	if cleaned == "" {
+		return
+	}
+	target[cleaned] = struct{}{}
+}
+
+func extractLogseqTagValues(text string) []string {
+	matches := journalTagRe.FindAllStringSubmatch(text, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		value := strings.TrimSpace(match[1])
+		if value == "" {
+			continue
+		}
+		out = append(out, value)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func extractPropertyValues(text string, key string) []string {
+	if strings.TrimSpace(text) == "" || key == "" {
+		return nil
+	}
+	lines := strings.Split(text, "\n")
+	out := make([]string, 0)
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		parts := strings.SplitN(trimmed, "::", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		propKey := strings.ToLower(strings.TrimSpace(parts[0]))
+		if propKey != key {
+			continue
+		}
+		value := strings.TrimSpace(parts[1])
+		if value == "" {
+			continue
+		}
+		tagValues := extractLogseqTagValues(value)
+		if len(tagValues) > 0 {
+			for _, tag := range tagValues {
+				out = append(out, strings.ToLower(tag))
+			}
+			continue
+		}
+		cleaned := sanitizePropertyValue(value)
+		if cleaned == "" {
+			continue
+		}
+		out = append(out, strings.ToLower(cleaned))
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func sanitizePropertyValue(value string) string {
+	cleaned := strings.TrimSpace(stripLogseqTags(value))
+	if cleaned == "" {
+		return ""
+	}
+	if strings.Trim(cleaned, "[]") == "" {
+		return ""
+	}
+	return cleaned
 }
 
 func sortedTagsFromSet(tags map[string]struct{}) []string {
@@ -829,6 +1030,28 @@ func normalizeTagsLower(tags []string) []string {
 	out := make([]string, 0, len(tags))
 	for _, tag := range tags {
 		trimmed := strings.TrimSpace(tag)
+		if trimmed == "" {
+			continue
+		}
+		normalized := strings.ToLower(trimmed)
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func normalizePropertyKeys(keys []string) []string {
+	if len(keys) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(keys))
+	out := make([]string, 0, len(keys))
+	for _, key := range keys {
+		trimmed := strings.TrimSpace(key)
 		if trimmed == "" {
 			continue
 		}

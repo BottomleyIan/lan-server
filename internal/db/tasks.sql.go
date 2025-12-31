@@ -24,29 +24,31 @@ INSERT INTO journal_entries (
   body,
   status,
   tags,
+  property_keys,
   type,
   scheduled_at,
   deadline_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, property_keys, type, scheduled_at, deadline_at, created_at, updated_at
 `
 
 type CreateJournalEntryParams struct {
-	Year        int64
-	Month       int64
-	Day         int64
-	JournalDate string
-	Position    int64
-	Title       string
-	RawLine     string
-	Hash        string
-	Body        dbtypes.NullString
-	Status      dbtypes.NullString
-	Tags        string
-	Type        string
-	ScheduledAt dbtypes.NullString
-	DeadlineAt  dbtypes.NullString
+	Year         int64
+	Month        int64
+	Day          int64
+	JournalDate  string
+	Position     int64
+	Title        string
+	RawLine      string
+	Hash         string
+	Body         dbtypes.NullString
+	Status       dbtypes.NullString
+	Tags         string
+	PropertyKeys string
+	Type         string
+	ScheduledAt  dbtypes.NullString
+	DeadlineAt   dbtypes.NullString
 }
 
 // ---------- journal_entries ----------
@@ -63,6 +65,7 @@ func (q *Queries) CreateJournalEntry(ctx context.Context, arg CreateJournalEntry
 		arg.Body,
 		arg.Status,
 		arg.Tags,
+		arg.PropertyKeys,
 		arg.Type,
 		arg.ScheduledAt,
 		arg.DeadlineAt,
@@ -81,6 +84,7 @@ func (q *Queries) CreateJournalEntry(ctx context.Context, arg CreateJournalEntry
 		&i.Body,
 		&i.Status,
 		&i.Tags,
+		&i.PropertyKeys,
 		&i.Type,
 		&i.ScheduledAt,
 		&i.DeadlineAt,
@@ -125,7 +129,7 @@ func (q *Queries) DeleteJournalEntriesByMonth(ctx context.Context, arg DeleteJou
 }
 
 const getJournalEntryByDateHash = `-- name: GetJournalEntryByDateHash :one
-SELECT id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+SELECT id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, property_keys, type, scheduled_at, deadline_at, created_at, updated_at
 FROM journal_entries
 WHERE year = ?
   AND month = ?
@@ -162,6 +166,7 @@ func (q *Queries) GetJournalEntryByDateHash(ctx context.Context, arg GetJournalE
 		&i.Body,
 		&i.Status,
 		&i.Tags,
+		&i.PropertyKeys,
 		&i.Type,
 		&i.ScheduledAt,
 		&i.DeadlineAt,
@@ -172,7 +177,7 @@ func (q *Queries) GetJournalEntryByDateHash(ctx context.Context, arg GetJournalE
 }
 
 const listJournalEntries = `-- name: ListJournalEntries :many
-SELECT id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, type, scheduled_at, deadline_at, created_at, updated_at
+SELECT id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, property_keys, type, scheduled_at, deadline_at, created_at, updated_at
 FROM journal_entries
 WHERE (
     ?1 IS NULL
@@ -233,6 +238,7 @@ func (q *Queries) ListJournalEntries(ctx context.Context, arg ListJournalEntries
 			&i.Body,
 			&i.Status,
 			&i.Tags,
+			&i.PropertyKeys,
 			&i.Type,
 			&i.ScheduledAt,
 			&i.DeadlineAt,
@@ -242,6 +248,67 @@ func (q *Queries) ListJournalEntries(ctx context.Context, arg ListJournalEntries
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJournalEntryBodiesByPropertyKey = `-- name: ListJournalEntryBodiesByPropertyKey :many
+SELECT body
+FROM journal_entries
+WHERE EXISTS (
+  SELECT 1
+  FROM json_each(journal_entries.property_keys)
+  WHERE LOWER(value) = LOWER(?)
+)
+`
+
+func (q *Queries) ListJournalEntryBodiesByPropertyKey(ctx context.Context, lower string) ([]dbtypes.NullString, error) {
+	rows, err := q.db.QueryContext(ctx, listJournalEntryBodiesByPropertyKey, lower)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []dbtypes.NullString
+	for rows.Next() {
+		var body dbtypes.NullString
+		if err := rows.Scan(&body); err != nil {
+			return nil, err
+		}
+		items = append(items, body)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJournalEntryPropertyKeys = `-- name: ListJournalEntryPropertyKeys :many
+SELECT property_keys
+FROM journal_entries
+`
+
+func (q *Queries) ListJournalEntryPropertyKeys(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listJournalEntryPropertyKeys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var property_keys string
+		if err := rows.Scan(&property_keys); err != nil {
+			return nil, err
+		}
+		items = append(items, property_keys)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
