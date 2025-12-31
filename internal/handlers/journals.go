@@ -690,7 +690,7 @@ func parseLogseqEntries(content string) []logseqEntry {
 		if current == nil {
 			return
 		}
-		current.Body = strings.Join(bodyLines, "\n")
+		current.Body = buildEntryBody(current.RawLine, bodyLines)
 		current.Tags = sortedTagsFromSet(tagSet)
 		current.RawBlock = buildLogseqBlock(current.RawLine, bodyLines)
 		current.Hash = hashLogseqBlock(current.RawBlock)
@@ -818,6 +818,21 @@ func buildLogseqBlock(firstLine string, bodyLines []string) string {
 		return block
 	}
 	return block + "\n" + strings.Join(bodyLines, "\n")
+}
+
+func buildEntryBody(rawLine string, bodyLines []string) string {
+	firstLine := strings.TrimSpace(rawLine)
+	if strings.HasPrefix(firstLine, "- ") {
+		firstLine = strings.TrimPrefix(firstLine, "- ")
+	}
+	end := len(bodyLines)
+	for end > 0 && strings.TrimSpace(bodyLines[end-1]) == "" {
+		end--
+	}
+	if end == 0 {
+		return firstLine
+	}
+	return firstLine + "\n" + strings.Join(bodyLines[:end], "\n")
 }
 
 func hashLogseqBlock(block string) string {
