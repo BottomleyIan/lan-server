@@ -517,9 +517,6 @@ func pad2(value int) string {
 
 func extractJournalTags(content string) []string {
 	matches := journalTagRe.FindAllStringSubmatch(content, -1)
-	if len(matches) == 0 {
-		return nil
-	}
 	unique := make(map[string]struct{}, len(matches))
 	for _, match := range matches {
 		if len(match) < 2 {
@@ -531,6 +528,11 @@ func extractJournalTags(content string) []string {
 		}
 		unique[tag] = struct{}{}
 	}
+
+	for _, line := range strings.Split(content, "\n") {
+		collectLogseqPropertyTags(unique, line)
+	}
+
 	if len(unique) == 0 {
 		return nil
 	}
@@ -681,6 +683,7 @@ func parseLogseqEntries(content string) []logseqEntry {
 			}
 			tagSet = make(map[string]struct{})
 			collectLogseqTags(tagSet, rawTitle)
+			collectLogseqPropertyTags(tagSet, rawTitle)
 			title := strings.TrimSpace(stripLogseqTags(rawTitle))
 			current = &logseqEntry{
 				Title:   title,
@@ -695,6 +698,7 @@ func parseLogseqEntries(content string) []logseqEntry {
 		if current != nil {
 			bodyLines = append(bodyLines, line)
 			collectLogseqTags(tagSet, line)
+			collectLogseqPropertyTags(tagSet, line)
 			if current.ScheduledAt == "" && strings.HasPrefix(trimmed, "SCHEDULED:") {
 				current.ScheduledAt = parseLogseqTimestamp(trimmed, "SCHEDULED:")
 			}
@@ -739,6 +743,31 @@ func collectLogseqTags(target map[string]struct{}, text string) {
 		}
 		target[tag] = struct{}{}
 	}
+}
+
+func collectLogseqPropertyTags(target map[string]struct{}, text string) {
+	if target == nil {
+		return
+	}
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return
+	}
+	parts := strings.SplitN(trimmed, "::", 2)
+	if len(parts) < 2 {
+		return
+	}
+	key := strings.TrimSpace(parts[0])
+	value := strings.TrimSpace(parts[1])
+	if key == "" {
+		return
+	}
+	target[key] = struct{}{}
+	value = strings.TrimSpace(stripLogseqTags(value))
+	if value == "" {
+		return
+	}
+	target[value] = struct{}{}
 }
 
 func sortedTagsFromSet(tags map[string]struct{}) []string {
