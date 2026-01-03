@@ -176,6 +176,54 @@ func (q *Queries) GetJournalEntryByDateHash(ctx context.Context, arg GetJournalE
 	return i, err
 }
 
+const getJournalEntryByDatePosition = `-- name: GetJournalEntryByDatePosition :one
+SELECT id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, property_keys, type, scheduled_at, deadline_at, created_at, updated_at
+FROM journal_entries
+WHERE year = ?
+  AND month = ?
+  AND day = ?
+  AND position = ?
+LIMIT 1
+`
+
+type GetJournalEntryByDatePositionParams struct {
+	Year     int64
+	Month    int64
+	Day      int64
+	Position int64
+}
+
+func (q *Queries) GetJournalEntryByDatePosition(ctx context.Context, arg GetJournalEntryByDatePositionParams) (JournalEntry, error) {
+	row := q.db.QueryRowContext(ctx, getJournalEntryByDatePosition,
+		arg.Year,
+		arg.Month,
+		arg.Day,
+		arg.Position,
+	)
+	var i JournalEntry
+	err := row.Scan(
+		&i.ID,
+		&i.Year,
+		&i.Month,
+		&i.Day,
+		&i.JournalDate,
+		&i.Position,
+		&i.Title,
+		&i.RawLine,
+		&i.Hash,
+		&i.Body,
+		&i.Status,
+		&i.Tags,
+		&i.PropertyKeys,
+		&i.Type,
+		&i.ScheduledAt,
+		&i.DeadlineAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listJournalEntries = `-- name: ListJournalEntries :many
 SELECT id, year, month, day, journal_date, position, title, raw_line, hash, body, status, tags, property_keys, type, scheduled_at, deadline_at, created_at, updated_at
 FROM journal_entries

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"bottomley.ian/musicserver/internal/db"
@@ -156,21 +157,20 @@ func (h *Handlers) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// UpdateJournalEntryByHash godoc
-// @Summary Update journal entry by hash
+// UpdateJournalEntryByPosition godoc
+// @Summary Update journal entry by position
 // @Tags journals
 // @Accept json
 // @Produce json
 // @Param year path int true "Year"
 // @Param month path int true "Month"
 // @Param day path int true "Day"
-// @Param hash path string true "Entry hash"
-// @Param If-Match header string true "Entry hash for concurrency"
+// @Param position path int true "Entry position"
 // @Param request body updateJournalEntryRequest true "Updated entry payload"
 // @Success 200 {object} JournalEntryDTO
-// @Router /journals/entries/{year}/{month}/{day}/{hash} [put]
-func (h *Handlers) UpdateJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
-	h.updateJournalEntryByHash(w, r)
+// @Router /journals/entries/{year}/{month}/{day}/{position} [put]
+func (h *Handlers) UpdateJournalEntryByPosition(w http.ResponseWriter, r *http.Request) {
+	h.updateJournalEntryByPosition(w, r)
 }
 
 // DeleteJournalEntryByHash godoc
@@ -184,6 +184,21 @@ func (h *Handlers) UpdateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 // @Router /journals/entries/{year}/{month}/{day}/{hash} [delete]
 func (h *Handlers) DeleteJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
 	h.deleteJournalEntryByHash(w, r)
+}
+
+// UpdateJournalEntryStatus godoc
+// @Summary Update journal entry status by position
+// @Tags journals
+// @Produce json
+// @Param year path int true "Year"
+// @Param month path int true "Month"
+// @Param day path int true "Day"
+// @Param position path int true "Entry position"
+// @Param status path string true "Task status"
+// @Success 200 {object} JournalEntryDTO
+// @Router /journals/entries/{year}/{month}/{day}/{position}/{status} [put]
+func (h *Handlers) UpdateJournalEntryStatus(w http.ResponseWriter, r *http.Request) {
+	h.updateJournalEntryStatus(w, r)
 }
 
 func renderEntryFromRequest(w http.ResponseWriter, body createJournalEntryRequest, description string) (string, bool) {
@@ -368,7 +383,7 @@ func buildDateFilter(year, month, day *int64) *string {
 	return &pattern
 }
 
-func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -379,19 +394,14 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	hash := strings.TrimSpace(chi.URLParam(r, "hash"))
-	if hash == "" {
-		http.Error(w, "hash required", http.StatusBadRequest)
+	positionStr := strings.TrimSpace(chi.URLParam(r, "position"))
+	if positionStr == "" {
+		http.Error(w, "position required", http.StatusBadRequest)
 		return
 	}
-
-	match := strings.TrimSpace(r.Header.Get("If-Match"))
-	if match == "" {
-		http.Error(w, "If-Match required", http.StatusBadRequest)
-		return
-	}
-	if match != hash {
-		http.Error(w, "hash mismatch", http.StatusPreconditionFailed)
+	position, err := strconv.Atoi(positionStr)
+	if err != nil || position < 0 {
+		http.Error(w, "invalid position", http.StatusBadRequest)
 		return
 	}
 
@@ -405,11 +415,11 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	newEntry, ok := parseLogseqEntryBlock(body.Raw)
-	if !ok {
-		http.Error(w, "invalid entry", http.StatusBadRequest)
-		return
-	}
+	//newEntry, ok := parseLogseqEntryBlock(body.Raw)
+	//if !ok {
+	//	http.Error(w, "invalid entry", http.StatusBadRequest)
+	//	return
+	//}
 
 	h.journalSyncMu.Lock()
 	defer h.journalSyncMu.Unlock()
@@ -439,7 +449,7 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 	content := string(data)
 	lines := strings.Split(content, "\n")
 	entries := parseLogseqEntries(content)
-	start, end, ok := findEntryRange(entries, hash)
+	start, end, ok := findEntryRangeByPosition(entries, position)
 	if !ok {
 		http.Error(w, "entry not found", http.StatusNotFound)
 		return
@@ -457,7 +467,7 @@ func (h *Handlers) updateJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	entryRow, err := h.syncJournalDayFromContent(r.Context(), year, month, day, []byte(newContent), newEntry.Hash)
+	entryRow, err := h.syncJournalDayFromContent(r.Context(), year, month, day, []byte(newContent), position)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "entry not found", http.StatusNotFound)
@@ -541,15 +551,117 @@ func (h *Handlers) deleteJournalEntryByHash(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handlers) syncJournalDayFromContent(ctx context.Context, year, month, day int, data []byte, hash string) (db.JournalEntry, error) {
+func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	year, month, day, ok := parseYearMonthDayParams(w, r)
+	if !ok {
+		return
+	}
+
+	positionStr := strings.TrimSpace(chi.URLParam(r, "position"))
+	if positionStr == "" {
+		http.Error(w, "position required", http.StatusBadRequest)
+		return
+	}
+	position, err := strconv.Atoi(positionStr)
+	if err != nil || position < 0 {
+		http.Error(w, "invalid position", http.StatusBadRequest)
+		return
+	}
+
+	status := strings.TrimSpace(chi.URLParam(r, "status"))
+	if status == "" {
+		http.Error(w, "status required", http.StatusBadRequest)
+		return
+	}
+	if _, ok := logseqTaskStatusSet[status]; !ok {
+		http.Error(w, "invalid status", http.StatusBadRequest)
+		return
+	}
+
+	h.journalSyncMu.Lock()
+	defer h.journalSyncMu.Unlock()
+
+	folder, ok, err := h.journalsFolder(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "journals folder not found", http.StatusNotFound)
+		return
+	}
+
+	filename := journalFilename(year, month, day)
+	fullPath := filepath.Join(folder, filename)
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			http.Error(w, "journal not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	content := string(data)
+	lines := strings.Split(content, "\n")
+	entries := parseLogseqEntries(content)
+	start, _, ok := findEntryRangeByPosition(entries, position)
+	if !ok {
+		http.Error(w, "entry not found", http.StatusNotFound)
+		return
+	}
+	entry := entries[position]
+	if entry.Type != "task" {
+		http.Error(w, "task entry required", http.StatusBadRequest)
+		return
+	}
+
+	tagText := formatLogseqTags(entry.Tags)
+	line := "- " + status + " "
+	if tagText != "" {
+		line += tagText + " "
+	}
+	line += entry.Title
+	lines[start] = line
+
+	newContent := strings.Join(lines, "\n")
+	if !strings.HasSuffix(newContent, "\n") {
+		newContent += "\n"
+	}
+
+	if err := h.App.FS.WriteFile(fullPath, []byte(newContent), 0o644); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	entryRow, err := h.syncJournalDayFromContent(r.Context(), year, month, day, []byte(newContent), position)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "entry not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, journalEntryDTOFromDB(entryRow))
+}
+
+func (h *Handlers) syncJournalDayFromContent(ctx context.Context, year, month, day int, data []byte, position int) (db.JournalEntry, error) {
 	if err := h.syncJournalDayAfterEdit(ctx, year, month, day, data); err != nil {
 		return db.JournalEntry{}, err
 	}
-	return h.App.Queries.GetJournalEntryByDateHash(ctx, db.GetJournalEntryByDateHashParams{
-		Year:  int64(year),
-		Month: int64(month),
-		Day:   int64(day),
-		Hash:  hash,
+	return h.App.Queries.GetJournalEntryByDatePosition(ctx, db.GetJournalEntryByDatePositionParams{
+		Year:     int64(year),
+		Month:    int64(month),
+		Day:      int64(day),
+		Position: int64(position),
 	})
 }
 
@@ -580,6 +692,26 @@ func findEntryRange(entries []logseqEntry, hash string) (int, int, bool) {
 		end := lineIndex - 1
 
 		if entry.Hash == hash {
+			return start, end, true
+		}
+	}
+	return 0, 0, false
+}
+
+func findEntryRangeByPosition(entries []logseqEntry, position int) (int, int, bool) {
+	if position < 0 || position >= len(entries) {
+		return 0, 0, false
+	}
+	lineIndex := 0
+	for idx, entry := range entries {
+		start := lineIndex
+		lineIndex++
+		if entry.Body != "" {
+			bodyLines := strings.Split(entry.Body, "\n")
+			lineIndex += len(bodyLines)
+		}
+		end := lineIndex - 1
+		if idx == position {
 			return start, end, true
 		}
 	}

@@ -1008,6 +1008,7 @@ paths:
       summary: Delete journal entry by hash
       tags:
       - journals
+  /journals/entries/{year}/{month}/{day}/{position}:
     put:
       consumes:
       - application/json
@@ -1027,16 +1028,11 @@ paths:
         name: day
         required: true
         type: integer
-      - description: Entry hash
+      - description: Entry position
         in: path
-        name: hash
+        name: position
         required: true
-        type: string
-      - description: Entry hash for concurrency
-        in: header
-        name: If-Match
-        required: true
-        type: string
+        type: integer
       - description: Updated entry payload
         in: body
         name: request
@@ -1050,7 +1046,45 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handlers.JournalEntryDTO'
-      summary: Update journal entry by hash
+      summary: Update journal entry by position
+      tags:
+      - journals
+  /journals/entries/{year}/{month}/{day}/{position}/{status}:
+    put:
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Entry position
+        in: path
+        name: position
+        required: true
+        type: integer
+      - description: Task status
+        in: path
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.JournalEntryDTO'
+      summary: Update journal entry status by position
       tags:
       - journals
   /journals/property-keys:

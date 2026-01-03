@@ -393,10 +393,12 @@ func mapTaskStatus(status string) string {
 		return "DONE"
 	case "CANCELLED":
 		return "CANCELLED"
-	case "DOING", "IN-PROGRESS", "WAITING":
-		return "IN-PROGRESS"
-	case "LATER", "NOW", "TODO":
+	case "DOING", "IN-PROGRESS":
+		return "DOING"
+	case "NOW", "TODO":
 		return "TODO"
+	case "LATER", "WAITING":
+		return "LATER"
 	default:
 		return status
 	}

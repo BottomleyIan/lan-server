@@ -120,7 +120,8 @@ func main() {
 			r.Route("/entries", func(r chi.Router) {
 				r.Get("/", h.ListJournalEntries)
 				r.Post("/", h.CreateJournalEntry)
-				r.Put("/{year}/{month}/{day}/{hash}", h.UpdateJournalEntryByHash)
+				r.Put("/{year}/{month}/{day}/{position}", h.UpdateJournalEntryByPosition)
+				r.Put("/{year}/{month}/{day}/{position}/{status}", h.UpdateJournalEntryStatus)
 				r.Delete("/{year}/{month}/{day}/{hash}", h.DeleteJournalEntryByHash)
 			})
 			r.Get("/assets", h.GetJournalAsset)

@@ -73,6 +73,15 @@ WHERE year = ?
   AND hash = ?
 LIMIT 1;
 
+-- name: GetJournalEntryByDatePosition :one
+SELECT *
+FROM journal_entries
+WHERE year = ?
+  AND month = ?
+  AND day = ?
+  AND position = ?
+LIMIT 1;
+
 -- name: DeleteJournalEntriesByDate :exec
 DELETE FROM journal_entries
 WHERE year = ?
