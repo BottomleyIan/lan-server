@@ -171,6 +171,7 @@ func (h *Handlers) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
 // @Param month path int true "Month"
 // @Param day path int true "Day"
 // @Param position path int true "Entry position"
+// @ID updateJournalEntryByPosition
 // @Param request body updateJournalEntryRequest true "Updated entry payload"
 // @Success 200 {object} JournalEntryDTO
 // @Router /journals/entries/{year}/{month}/{day}/{position} [put]
@@ -252,6 +253,7 @@ func (h *Handlers) CreateJournalEntryRawByDate(w http.ResponseWriter, r *http.Re
 // @Param day path int true "Day"
 // @Param position path int true "Entry position"
 // @Param status path string true "Task status"
+// @ID updateJournalEntryStatus
 // @Success 200 {object} JournalEntryDTO
 // @Router /journals/entries/{year}/{month}/{day}/{position}/{status} [put]
 func (h *Handlers) UpdateJournalEntryStatus(w http.ResponseWriter, r *http.Request) {

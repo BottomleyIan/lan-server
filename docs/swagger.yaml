@@ -1051,6 +1051,7 @@ paths:
     put:
       consumes:
       - application/json
+      operationId: updateJournalEntryByPosition
       parameters:
       - description: Year
         in: path
@@ -1090,6 +1091,7 @@ paths:
       - journals
   /journals/entries/{year}/{month}/{day}/{position}/{status}:
     put:
+      operationId: updateJournalEntryStatus
       parameters:
       - description: Year
         in: path

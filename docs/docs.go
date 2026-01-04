@@ -883,6 +883,7 @@ const docTemplate = `{
                     "journals"
                 ],
                 "summary": "Update journal entry by position",
+                "operationId": "updateJournalEntryByPosition",
                 "parameters": [
                     {
                         "type": "integer",
@@ -941,6 +942,7 @@ const docTemplate = `{
                     "journals"
                 ],
                 "summary": "Update journal entry status by position",
+                "operationId": "updateJournalEntryStatus",
                 "parameters": [
                     {
                         "type": "integer",
