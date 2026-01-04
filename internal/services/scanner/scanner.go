@@ -42,6 +42,9 @@ func isMusic(entry fs.DirEntry) (ext string, ok bool) {
 	if entry.IsDir() {
 		return "", false
 	}
+	if strings.HasPrefix(entry.Name(), "._") {
+		return "", false
+	}
 	ext = strings.ToLower(filepath.Ext(entry.Name()))
 	return ext, audioExt[ext]
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -390,6 +391,7 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 	}
 
 	year, month, day, ok := parseYearMonthDayParams(w, r)
+	log.Printf("year:%d, month:%d, day: %d", year, month, day)
 	if !ok {
 		return
 	}
@@ -426,7 +428,7 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 
 	folder, ok, err := h.journalsFolder(r.Context())
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 	if !ok {
@@ -442,7 +444,7 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 			http.Error(w, "journal not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 
@@ -463,7 +465,7 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 	}
 
 	if err := h.App.FS.WriteFile(fullPath, []byte(newContent), 0o644); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 
@@ -473,7 +475,7 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 			http.Error(w, "entry not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 
@@ -558,11 +560,13 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 	}
 
 	year, month, day, ok := parseYearMonthDayParams(w, r)
+	log.Printf("year:%d, month:%d, day: %d", year, month, day)
 	if !ok {
 		return
 	}
 
 	positionStr := strings.TrimSpace(chi.URLParam(r, "position"))
+	log.Printf("pos:%s", positionStr)
 	if positionStr == "" {
 		http.Error(w, "position required", http.StatusBadRequest)
 		return
@@ -588,7 +592,7 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 
 	folder, ok, err := h.journalsFolder(r.Context())
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 	if !ok {
@@ -604,7 +608,7 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 			http.Error(w, "journal not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 
@@ -612,6 +616,7 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 	lines := strings.Split(content, "\n")
 	entries := parseLogseqEntries(content)
 	start, _, ok := findEntryRangeByPosition(entries, position)
+	log.Printf("start: %d", start)
 	if !ok {
 		http.Error(w, "entry not found", http.StatusNotFound)
 		return
@@ -623,11 +628,14 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 	}
 
 	tagText := formatLogseqTags(entry.Tags)
+	log.Printf("tagText: %s", tagText)
 	line := "- " + status + " "
+	log.Printf("line: %s", line)
 	if tagText != "" {
 		line += tagText + " "
 	}
 	line += entry.Title
+	log.Printf("line: %s", line)
 	lines[start] = line
 
 	newContent := strings.Join(lines, "\n")
@@ -636,7 +644,7 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.App.FS.WriteFile(fullPath, []byte(newContent), 0o644); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 
@@ -646,7 +654,7 @@ func (h *Handlers) updateJournalEntryStatus(w http.ResponseWriter, r *http.Reque
 			http.Error(w, "entry not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeInternalError(w, err)
 		return
 	}
 
@@ -687,7 +695,9 @@ func findEntryRange(entries []logseqEntry, hash string) (int, int, bool) {
 		lineIndex++
 		if entry.Body != "" {
 			bodyLines := strings.Split(entry.Body, "\n")
-			lineIndex += len(bodyLines)
+			if extra := len(bodyLines) - 1; extra > 0 {
+				lineIndex += extra
+			}
 		}
 		end := lineIndex - 1
 
@@ -708,7 +718,9 @@ func findEntryRangeByPosition(entries []logseqEntry, position int) (int, int, bo
 		lineIndex++
 		if entry.Body != "" {
 			bodyLines := strings.Split(entry.Body, "\n")
-			lineIndex += len(bodyLines)
+			if extra := len(bodyLines) - 1; extra > 0 {
+				lineIndex += extra
+			}
 		}
 		end := lineIndex - 1
 		if idx == position {
@@ -716,4 +728,8 @@ func findEntryRangeByPosition(entries []logseqEntry, position int) (int, int, bo
 		}
 	}
 	return 0, 0, false
+}
+
+func writeInternalError(w http.ResponseWriter, err error) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
