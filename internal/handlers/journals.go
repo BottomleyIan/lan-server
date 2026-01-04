@@ -1260,6 +1260,63 @@ func (h *Handlers) appendToTodayJournal(ctx context.Context, entry string) error
 	return nil
 }
 
+func (h *Handlers) appendToJournalDate(ctx context.Context, year, month, day int, entry string) error {
+	folder, ok, err := h.journalsFolder(ctx)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errJournalsFolderNotFound
+	}
+
+	filename := journalFilename(year, month, day)
+	fullPath := filepath.Join(folder, filename)
+
+	if err := h.App.FS.MkdirAll(folder, 0o755); err != nil {
+		return err
+	}
+
+	if err := ensureTrailingNewline(fullPath); err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(entry + "\n"); err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		return err
+	}
+	hash := sha256.Sum256(data)
+	hashHex := hex.EncodeToString(hash[:])
+
+	tx, err := h.App.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	queries := h.App.Queries.WithTx(tx)
+	if err := syncJournalFromFile(ctx, queries, year, month, day, info.Size(), hashHex, data); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func ensureTrailingNewline(path string) error {
 	info, err := os.Stat(path)
 	if err != nil {

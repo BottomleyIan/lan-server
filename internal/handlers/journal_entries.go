@@ -29,6 +29,10 @@ type createJournalEntryRequest struct {
 	Scheduled   *string  `json:"scheduled,omitempty"`
 }
 
+type createJournalEntryRawRequest struct {
+	Raw string `json:"raw"`
+}
+
 type journalEntryListFilters struct {
 	Year     *int64
 	Month    *int64
@@ -185,6 +189,58 @@ func (h *Handlers) UpdateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 // @Router /journals/entries/{year}/{month}/{day}/{hash} [delete]
 func (h *Handlers) DeleteJournalEntryByHash(w http.ResponseWriter, r *http.Request) {
 	h.deleteJournalEntryByHash(w, r)
+}
+
+// CreateJournalEntryRawByDate godoc
+// @Summary Append a raw journal entry for a day
+// @Tags journals
+// @Accept json
+// @Produce json
+// @Param year path int true "Year"
+// @Param month path int true "Month"
+// @Param day path int true "Day"
+// @Param request body createJournalEntryRawRequest true "Raw entry payload"
+// @Success 204
+// @Router /journals/entries/{year}/{month}/{day} [post]
+func (h *Handlers) CreateJournalEntryRawByDate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	year, month, day, ok := parseYearMonthDayParams(w, r)
+	if !ok {
+		return
+	}
+
+	var body createJournalEntryRawRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	raw := strings.TrimRight(body.Raw, "\n")
+	if strings.TrimSpace(raw) == "" {
+		http.Error(w, "raw required", http.StatusBadRequest)
+		return
+	}
+	if _, ok := parseLogseqEntryBlock(raw); !ok {
+		http.Error(w, "invalid entry", http.StatusBadRequest)
+		return
+	}
+
+	h.journalSyncMu.Lock()
+	defer h.journalSyncMu.Unlock()
+
+	if err := h.appendToJournalDate(r.Context(), year, month, day, raw); err != nil {
+		if errors.Is(err, errJournalsFolderNotFound) {
+			http.Error(w, "journals folder not found", http.StatusNotFound)
+			return
+		}
+		writeInternalError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // UpdateJournalEntryStatus godoc

@@ -336,6 +336,11 @@ definitions:
       path:
         type: string
     type: object
+  handlers.createJournalEntryRawRequest:
+    properties:
+      raw:
+        type: string
+    type: object
   handlers.createJournalEntryRequest:
     properties:
       body:
@@ -977,6 +982,40 @@ paths:
         "204":
           description: No Content
       summary: Append a journal entry for today
+      tags:
+      - journals
+  /journals/entries/{year}/{month}/{day}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Year
+        in: path
+        name: year
+        required: true
+        type: integer
+      - description: Month
+        in: path
+        name: month
+        required: true
+        type: integer
+      - description: Day
+        in: path
+        name: day
+        required: true
+        type: integer
+      - description: Raw entry payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createJournalEntryRawRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Append a raw journal entry for a day
       tags:
       - journals
   /journals/entries/{year}/{month}/{day}/{hash}:

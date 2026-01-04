@@ -777,6 +777,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/journals/entries/{year}/{month}/{day}": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Append a raw journal entry for a day",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Year",
+                        "name": "year",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Month",
+                        "name": "month",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day",
+                        "name": "day",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Raw entry payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.createJournalEntryRawRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/journals/entries/{year}/{month}/{day}/{hash}": {
             "delete": {
                 "tags": [
@@ -2484,6 +2535,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.createJournalEntryRawRequest": {
+            "type": "object",
+            "properties": {
+                "raw": {
                     "type": "string"
                 }
             }
