@@ -224,8 +224,12 @@ func (h *Handlers) CreateJournalEntryRawByDate(w http.ResponseWriter, r *http.Re
 		http.Error(w, "raw required", http.StatusBadRequest)
 		return
 	}
+	if !strings.HasPrefix(strings.TrimSpace(raw), "- ") {
+		raw = "- " + raw
+	}
+
 	if _, ok := parseLogseqEntryBlock(raw); !ok {
-		http.Error(w, "invalid entry", http.StatusBadRequest)
+		http.Error(w, "invalid entry failed parse entry block", http.StatusBadRequest)
 		return
 	}
 
