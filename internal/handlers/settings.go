@@ -37,6 +37,14 @@ var settingKeyDefinitions = []SettingKeyDTO{
 		Key:         "theme",
 		Description: "UI theme name.",
 	},
+	{
+		Key:         "tasks-menu-tags",
+		Description: "Comma Seperated list of task tags for quick access",
+	},
+	{
+		Key:         "notes-menu-tags",
+		Description: "Comma Seperated list of note tags for quick access",
+	},
 }
 
 var settingKeysIndex = func() map[string]string {
