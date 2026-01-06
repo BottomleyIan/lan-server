@@ -42,6 +42,18 @@ var settingKeyDefinitions = []SettingKeyDTO{
 		Description: "Comma Seperated list of task tags for quick access",
 	},
 	{
+		Key:         "tasks-menu-personal-projects",
+		Description: "Comma Seperated list of personal project tags",
+	},
+	{
+		Key:         "tasks-menu-work-projects",
+		Description: "Comma Seperated list of work project tags",
+	},
+	{
+		Key:         "tasks-menu-ideas",
+		Description: "Comma Seperated list of ideas",
+	},
+	{
 		Key:         "notes-menu-tags",
 		Description: "Comma Seperated list of note tags for quick access",
 	},
