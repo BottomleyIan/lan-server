@@ -478,6 +478,9 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 		http.Error(w, "raw required", http.StatusBadRequest)
 		return
 	}
+	if !strings.HasPrefix(strings.TrimSpace(body.Raw), "- ") {
+		body.Raw = "- " + body.Raw
+	}
 
 	//newEntry, ok := parseLogseqEntryBlock(body.Raw)
 	//if !ok {
