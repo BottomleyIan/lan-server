@@ -219,13 +219,10 @@ func (h *Handlers) CreateJournalEntryRawByDate(w http.ResponseWriter, r *http.Re
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
-	raw := strings.TrimRight(body.Raw, "\n")
+	raw := normalizeRawEntry(body.Raw)
 	if strings.TrimSpace(raw) == "" {
 		http.Error(w, "raw required", http.StatusBadRequest)
 		return
-	}
-	if !strings.HasPrefix(strings.TrimSpace(raw), "- ") {
-		raw = "- " + raw
 	}
 
 	if _, ok := parseLogseqEntryBlock(raw); !ok {
@@ -474,12 +471,10 @@ func (h *Handlers) updateJournalEntryByPosition(w http.ResponseWriter, r *http.R
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
+	body.Raw = normalizeRawEntry(body.Raw)
 	if strings.TrimSpace(body.Raw) == "" {
 		http.Error(w, "raw required", http.StatusBadRequest)
 		return
-	}
-	if !strings.HasPrefix(strings.TrimSpace(body.Raw), "- ") {
-		body.Raw = "- " + body.Raw
 	}
 
 	//newEntry, ok := parseLogseqEntryBlock(body.Raw)
@@ -797,4 +792,31 @@ func findEntryRangeByPosition(entries []logseqEntry, position int) (int, int, bo
 
 func writeInternalError(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func normalizeRawEntry(raw string) string {
+	trimmed := strings.TrimRight(raw, "\n")
+	if strings.TrimSpace(trimmed) == "" {
+		return ""
+	}
+	lines := strings.Split(trimmed, "\n")
+	if len(lines) == 0 {
+		return ""
+	}
+	first := strings.TrimSpace(lines[0])
+	if !strings.HasPrefix(first, "- ") {
+		first = "- " + first
+	}
+	lines[0] = first
+
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "" {
+			lines[i] = ""
+			continue
+		}
+		withoutIndent := strings.TrimLeft(lines[i], " \t")
+		lines[i] = "  " + withoutIndent
+	}
+
+	return strings.Join(lines, "\n")
 }
