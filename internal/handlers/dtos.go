@@ -159,6 +159,14 @@ type JournalDayDTO struct {
 	Raw   string `json:"raw"`
 }
 
+type JournalGitSyncDTO struct {
+	Status        string `json:"status"`
+	CommitSkipped bool   `json:"commit_skipped"`
+	CommitOutput  string `json:"commit_output,omitempty"`
+	PullOutput    string `json:"pull_output,omitempty"`
+	PushOutput    string `json:"push_output,omitempty"`
+}
+
 type JournalEntryDTO struct {
 	ID           int64     `json:"id"`
 	Year         int64     `json:"year"`

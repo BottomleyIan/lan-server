@@ -1043,6 +1043,25 @@ const docTemplate = `{
                 }
             }
         },
+        "/journals/sync": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "journals"
+                ],
+                "summary": "Sync journals git repo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JournalGitSyncDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/journals/tags": {
             "get": {
                 "produces": [
@@ -2294,6 +2313,26 @@ const docTemplate = `{
                 },
                 "year": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.JournalGitSyncDTO": {
+            "type": "object",
+            "properties": {
+                "commit_output": {
+                    "type": "string"
+                },
+                "commit_skipped": {
+                    "type": "boolean"
+                },
+                "pull_output": {
+                    "type": "string"
+                },
+                "push_output": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },

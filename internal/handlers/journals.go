@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -358,6 +359,73 @@ func (h *Handlers) GetJournalTagGraph(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "tag not found", http.StatusNotFound)
 }
 
+// SyncJournalsGit godoc
+// @Summary Sync journals git repo
+// @Tags journals
+// @Produce json
+// @Success 200 {object} JournalGitSyncDTO
+// @Router /journals/sync [post]
+func (h *Handlers) SyncJournalsGit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	h.journalSyncMu.Lock()
+	defer h.journalSyncMu.Unlock()
+
+	folder, ok, err := h.journalsFolder(r.Context())
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "journals folder not found", http.StatusNotFound)
+		return
+	}
+
+	statusOutput, err := runGitCommand(r.Context(), folder, "status", "--porcelain")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	commitSkipped := strings.TrimSpace(statusOutput) == ""
+	commitOutput := ""
+	if !commitSkipped {
+		if _, err := runGitCommand(r.Context(), folder, "add", "-A"); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		commitOutput, err = runGitCommand(r.Context(), folder, "commit", "-m", "lan server commit")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	pullOutput, err := runGitCommand(r.Context(), folder, "pull")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	pushOutput, err := runGitCommand(r.Context(), folder, "push")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, JournalGitSyncDTO{
+		Status:        "ok",
+		CommitSkipped: commitSkipped,
+		CommitOutput:  commitOutput,
+		PullOutput:    pullOutput,
+		PushOutput:    pushOutput,
+	})
+}
+
 func (h *Handlers) syncJournalsFromDisk(ctx context.Context) error {
 	h.journalSyncMu.Lock()
 	defer h.journalSyncMu.Unlock()
@@ -417,6 +485,34 @@ func (h *Handlers) syncJournalsFromDisk(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+type gitCommandError struct {
+	command string
+	output  string
+	err     error
+}
+
+func (e gitCommandError) Error() string {
+	if strings.TrimSpace(e.output) == "" {
+		return fmt.Sprintf("%s failed: %v", e.command, e.err)
+	}
+	return fmt.Sprintf("%s failed: %v\n%s", e.command, e.err, e.output)
+}
+
+func runGitCommand(ctx context.Context, dir string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	outStr := strings.TrimSpace(string(output))
+	if err != nil {
+		return outStr, gitCommandError{
+			command: "git " + strings.Join(args, " "),
+			output:  outStr,
+			err:     err,
+		}
+	}
+	return outStr, nil
 }
 
 func (h *Handlers) journalsFolder(ctx context.Context) (string, bool, error) {

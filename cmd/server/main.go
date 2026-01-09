@@ -115,6 +115,7 @@ func main() {
 		})
 		r.Route("/journals", func(r chi.Router) {
 			r.Get("/", h.ListJournals)
+			r.Post("/sync", h.SyncJournalsGit)
 			r.Get("/property-keys", h.ListJournalPropertyKeys)
 			r.Get("/property-keys/{key}/values", h.ListJournalPropertyValues)
 			r.Route("/entries", func(r chi.Router) {

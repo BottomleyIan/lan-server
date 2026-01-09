@@ -177,6 +177,19 @@ definitions:
       year:
         type: integer
     type: object
+  handlers.JournalGitSyncDTO:
+    properties:
+      commit_output:
+        type: string
+      commit_skipped:
+        type: boolean
+      pull_output:
+        type: string
+      push_output:
+        type: string
+      status:
+        type: string
+    type: object
   handlers.MetalPriceDTO:
     properties:
       gbp:
@@ -1160,6 +1173,18 @@ paths:
               type: string
             type: array
       summary: List journal property values for a key
+      tags:
+      - journals
+  /journals/sync:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.JournalGitSyncDTO'
+      summary: Sync journals git repo
       tags:
       - journals
   /journals/tags:
